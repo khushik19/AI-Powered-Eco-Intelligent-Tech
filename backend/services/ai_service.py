@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash-lite")
 HEADERS = {
     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
     "Content-Type": "application/json",
@@ -113,6 +113,8 @@ Suggest specific actionable steps. When relevant, mention how the action could e
         headers=HEADERS,
         json=payload
     )
+    if not response.ok:
+        print(f"[OpenRouter ERROR] Status {response.status_code}: {response.text}")
     response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"]
 
