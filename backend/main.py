@@ -11,7 +11,7 @@ load_dotenv()
 # Initialize Firebase Admin
 cred = credentials.Certificate(os.getenv("FIREBASE_CREDENTIALS_PATH"))
 firebase_admin.initialize_app(cred, {
-    "storageBucket": "your-project-id.appspot.com"  # replace with yours
+    "storageBucket": f"{os.getenv('PROJECT_ID')}.appspot.com"
 })
 
 app = FastAPI(title="EcoTrack API")
