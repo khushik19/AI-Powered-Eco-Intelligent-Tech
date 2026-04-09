@@ -1,15 +1,16 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from services.ai_service import chat_with_gemini
+from services.ai_service import chat_with_openrouter
 
 router = APIRouter()
 
+
 class ChatRequest(BaseModel):
     query: str
-    history: list = []
+    history: list = []   # list of {"role": "user"|"assistant", "content": "..."}
+
 
 @router.post("/message")
 async def chat(req: ChatRequest):
-    response = chat_with_gemini(req.query, req.history)
+    response = chat_with_openrouter(req.query, req.history)
     return {"response": response}
-    

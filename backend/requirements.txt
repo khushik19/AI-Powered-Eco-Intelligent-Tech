@@ -1,8 +1,7 @@
 fastapi
 uvicorn[standard]
 firebase-admin
+python-dotenv
 python-multipart
 pillow
-python-dotenv
 requests
-google-generativeai
