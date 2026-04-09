@@ -4,6 +4,7 @@ import firebase_admin
 from firebase_admin import credentials
 from dotenv import load_dotenv
 import os
+from routers import submissions, chatbot, challenges, leaderboard, dashboard, suggestions, auth
 
 load_dotenv()
 
@@ -31,6 +32,8 @@ app.include_router(challenges.router,   prefix="/challenges",   tags=["Challenge
 app.include_router(leaderboard.router,  prefix="/leaderboard",  tags=["Leaderboard"])
 app.include_router(dashboard.router,    prefix="/dashboard",    tags=["Dashboard"])
 app.include_router(suggestions.router,  prefix="/suggestions",  tags=["Suggestions"])
+
+app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 
 @app.get("/")
 def root():
