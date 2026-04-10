@@ -17,9 +17,7 @@ else:
         raise Exception("Missing Firebase Credentials! Check FIREBASE_CREDENTIALS_PATH or FIREBASE_CREDENTIALS_JSON")
     cred = credentials.Certificate(json.loads(cred_json))
 
-firebase_admin.initialize_app(cred, {
-    "storageBucket": f"{os.getenv('PROJECT_ID', 'ecotrack-hackathon')}.appspot.com"
-})
+firebase_admin.initialize_app(cred)
 
 # Import routers AFTER firebase_admin.initialize_app()
 from routers import submissions, chatbot, challenges, leaderboard, dashboard, suggestions, auth
