@@ -1,4 +1,0 @@
-OPENROUTER_API_KEY=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
-OPENROUTER_MODEL=google/gemini-2.5-flash-lite
-FIREBASE_CREDENTIALS_PATH=serviceAccountKey.json
-PROJECT_ID=ecotrack-hackathon
