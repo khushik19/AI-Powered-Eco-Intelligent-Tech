@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 /// Central service for all backend API calls.
-/// Backend runs at http://localhost:8000
+/// Backend runs at https://ai-powered-eco-intelligent-tech.onrender.com
 class ApiService {
   ApiService._();
   static final ApiService instance = ApiService._();
 
-  static const String _baseUrl = 'http://localhost:8000';
+  static const String _baseUrl = 'https://ai-powered-eco-intelligent-tech.onrender.com';
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
 
