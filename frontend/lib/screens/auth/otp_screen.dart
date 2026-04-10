@@ -13,6 +13,7 @@ class OtpScreen extends StatefulWidget {
   final String state;
   final String country;
   final String institution;
+  final String? collegeId;
   final String idNumber;
 
   const OtpScreen({
@@ -25,6 +26,7 @@ class OtpScreen extends StatefulWidget {
     this.state = '',
     this.country = '',
     this.institution = '',
+    this.collegeId,
     this.idNumber = '',
   });
 
@@ -37,40 +39,70 @@ class _OtpScreenState extends State<OtpScreen> {
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   bool _isLoading = false;
+  bool _otpSent = false;
 
   String get _otp => _controllers.map((c) => c.text).join();
+
+  @override
+  void initState() {
+    super.initState();
+    _sendOtp();
+  }
+
+  Future<void> _sendOtp() async {
+    setState(() => _isLoading = true);
+
+    // DEMO MODE FAST FORWARD: 1.5 second fake delay
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _otpSent = true;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Demo OTP Sent! (Type ANY 6 digits to log in)'),
+        backgroundColor: AppColors.bioTeal,
+        duration: Duration(seconds: 4),
+      ),
+    );
+  }
 
   Future<void> _verify() async {
     if (_otp.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter the complete OTP')),
+        const SnackBar(content: Text('Please enter ANY 6-digit OTP')),
       );
       return;
     }
+
     setState(() => _isLoading = true);
-    try {
-      // TODO: Replace with actual OTP verification via Firebase Phone Auth
-      await Future.delayed(const Duration(seconds: 1));
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SetPasswordScreen(
-            email: widget.email,
-            name: widget.name,
-            phone: widget.phone,
-            userType: widget.userType,
-            city: widget.city,
-            state: widget.state,
-            country: widget.country,
-            institution: widget.institution,
-            idNumber: widget.idNumber,
-          ),
+    
+    // DEMO MODE FAST FORWARD: 1 second fake delay
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (!mounted) return;
+    
+    // Verification immediately successful!
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SetPasswordScreen(
+          email: widget.email,
+          name: widget.name,
+          phone: widget.phone,
+          userType: widget.userType,
+          city: widget.city,
+          state: widget.state,
+          country: widget.country,
+          institution: widget.institution,
+          collegeId: widget.collegeId,
+          idNumber: widget.idNumber,
         ),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+      ),
+    );
   }
 
   @override
@@ -108,11 +140,11 @@ class _OtpScreenState extends State<OtpScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
-                const Icon(Icons.mark_email_read_outlined,
+                const Icon(Icons.phonelink_ring_outlined,
                     color: AppColors.bioTeal, size: 64),
                 const SizedBox(height: 24),
                 const Text(
-                  'Check your email',
+                  'Check your phone',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.textPrimary,
@@ -123,7 +155,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'We sent a 6-digit OTP to\n${widget.email}',
+                  'We sent a 6-digit OTP to\n${widget.phone}',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: AppColors.textMuted,
@@ -148,9 +180,9 @@ class _OtpScreenState extends State<OtpScreen> {
                           keyboardType: TextInputType.number,
                           maxLength: 1,
                           style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
                           ),
                           decoration: const InputDecoration(
                             counterText: '',
@@ -198,7 +230,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: _isLoading ? null : _sendOtp,
                   child: const Text(
                     'Resend OTP',
                     style: TextStyle(

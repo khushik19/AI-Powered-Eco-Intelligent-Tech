@@ -14,6 +14,7 @@ class SetPasswordScreen extends StatefulWidget {
   final String state;
   final String country;
   final String institution;
+  final String? collegeId;
   final String idNumber;
 
   const SetPasswordScreen({
@@ -26,6 +27,7 @@ class SetPasswordScreen extends StatefulWidget {
     this.state = '',
     this.country = '',
     this.institution = '',
+    this.collegeId,
     this.idNumber = '',
   });
 
@@ -55,6 +57,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
         state: widget.state,
         country: widget.country,
         institution: widget.institution.isNotEmpty ? widget.institution : null,
+        collegeId: widget.collegeId,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

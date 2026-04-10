@@ -6,6 +6,7 @@ import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
 import 'add_record_screen.dart';
 import 'all_records_screen.dart';
+import 'impact_report_screen.dart';
 import 'report_screen.dart';
 
 class RecordsScreen extends StatefulWidget {
@@ -243,13 +244,22 @@ class _RecordsScreenState extends State<RecordsScreen> {
                   const SizedBox(height: 12),
 
                   LiquidGlassCard(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            ReportScreen(userData: widget.userData),
-                      ),
-                    ),
+                    onTap: () {
+                      final bool isOrg = widget.userData['role'] == 'college_org';
+                      final String entityId = isOrg
+                          ? (widget.userData['collegeId'] as String? ?? widget.userData['uid'] as String)
+                          : widget.userData['uid'] as String;
+                          
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ImpactReportScreen(
+                            entityId: entityId,
+                            isCollege: isOrg,
+                          ),
+                        ),
+                      );
+                    },
                     padding: const EdgeInsets.all(22),
                     borderColor: AppColors.bioTeal.withOpacity(0.35),
                     child: Row(
@@ -280,7 +290,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'View Impact Report',
+                                'View Detailed Impact Report',
                                 style: TextStyle(
                                   fontFamily: 'Montserrat',
                                   fontSize: 15,

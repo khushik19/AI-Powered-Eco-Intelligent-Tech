@@ -17,12 +17,6 @@ class ApiService {
 
   Map<String, String> get _headers => {'Content-Type': 'application/json'};
 
-  void _assertOk(http.Response res) {
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception('[${res.statusCode}] ${res.body}');
-    }
-  }
-
   // ─── Leaderboard ────────────────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getIndividualLeaderboard({
@@ -38,11 +32,17 @@ class ApiService {
         .where((u) => u['role'] != 'college_org' && u['role'] != 'college')
         .toList();
 
-    if (collegeId != null) {
+    if (collegeId != null && collegeId.isNotEmpty) {
       users = users
           .where((u) =>
               u['collegeId'] == collegeId || u['institution'] == collegeId)
           .toList();
+    }
+    if (city != null && city.isNotEmpty) {
+      users = users.where((u) => u['city'] == city).toList();
+    }
+    if (state != null && state.isNotEmpty) {
+      users = users.where((u) => u['state'] == state).toList();
     }
 
     users.sort((a, b) {
@@ -61,13 +61,24 @@ class ApiService {
   }) async {
     final Query query = _db
         .collection('colleges')
-        .orderBy('accreditationScore', descending: true)
-        .limit(limit);
+        .orderBy('accreditationScore', descending: true);
 
     final snap = await query.get();
-    return snap.docs
-        .map((d) => <String, dynamic>{'id': d.id, ...((d.data() as Map<String, dynamic>?) ?? {})})
+    var colleges = snap.docs
+        .map((d) => <String, dynamic>{
+              'id': d.id,
+              ...((d.data() as Map<String, dynamic>?) ?? {})
+            })
         .toList();
+
+    if (city != null && city.isNotEmpty) {
+      colleges = colleges.where((c) => c['city'] == city).toList();
+    }
+    if (state != null && state.isNotEmpty) {
+      colleges = colleges.where((c) => c['state'] == state).toList();
+    }
+
+    return colleges.take(limit).toList();
   }
 
   // ─── Dashboard ──────────────────────────────────────────────────────────────
@@ -79,9 +90,7 @@ class ApiService {
         .where('userId', isEqualTo: userId)
         .get();
 
-    final submissions = submissionsSnap.docs
-        .map((d) => d.data())
-        .toList()
+    final submissions = submissionsSnap.docs.map((d) => d.data()).toList()
       ..sort((a, b) {
         final ta = a['createdAt'] as String? ?? '';
         final tb = b['createdAt'] as String? ?? '';
@@ -108,10 +117,9 @@ class ApiService {
 
     for (final doc in submissionsSnap.docs) {
       final d = doc.data();
-      final month =
-          (d['createdAt'] as String? ?? '').length >= 7
-              ? (d['createdAt'] as String).substring(0, 7)
-              : '';
+      final month = (d['createdAt'] as String? ?? '').length >= 7
+          ? (d['createdAt'] as String).substring(0, 7)
+          : '';
       monthlyCo2[month] = (monthlyCo2[month] ?? 0) +
           (d['co2ReducedKg'] as num? ?? 0).toDouble();
       final at = d['actionType'] as String? ?? 'other';
@@ -119,8 +127,7 @@ class ApiService {
     }
 
     return {
-      'college':
-          collegeDoc.exists ? collegeDoc.data()! : <String, dynamic>{},
+      'college': collegeDoc.exists ? collegeDoc.data()! : <String, dynamic>{},
       'monthlyCo2': monthlyCo2,
       'actionBreakdown': actionTypes,
     };
@@ -134,7 +141,8 @@ class ApiService {
     String query,
     List<Map<String, String>> history,
   ) async {
-    debugPrint('[Chat] POST $_baseUrl/chatbot/message (history=${history.length})');
+    debugPrint(
+        '[Chat] POST $_baseUrl/chatbot/message (history=${history.length})');
     try {
       final res = await http
           .post(
@@ -151,7 +159,8 @@ class ApiService {
         final reply = data['response'] as String? ?? '';
         if (reply.isNotEmpty) return reply;
       } else {
-        debugPrint('[Chat] error body: ${res.body.substring(0, res.body.length.clamp(0, 300))}');
+        debugPrint(
+            '[Chat] error body: ${res.body.substring(0, res.body.length.clamp(0, 300))}');
       }
     } catch (e) {
       debugPrint('[Chat] exception: $e');
@@ -162,18 +171,19 @@ class ApiService {
   // ─── Submissions ────────────────────────────────────────────────────────────
 
   /// Upload image bytes to Firebase Storage. Returns URL or '' on failure.
-  Future<String> _uploadImageToStorage(
-      Uint8List bytes, String userId) async {
+  Future<String> _uploadImageToStorage(Uint8List bytes, String userId) async {
     // On web, Firebase Storage requires CORS configuration on the bucket.
     // When running on localhost (dev), CORS is blocked. We store the image
     // as a base64 data URL in Firestore instead — no CORS needed.
     if (kIsWeb) {
-      debugPrint('[SUBMIT] Step 1: Web mode — storing image as base64 data URL');
+      debugPrint(
+          '[SUBMIT] Step 1: Web mode — storing image as base64 data URL');
       final b64 = base64Encode(bytes);
       return 'data:image/jpeg;base64,$b64';
     }
 
-    debugPrint('[SUBMIT] Step 1: Uploading image (${bytes.length} bytes) to Firebase Storage...');
+    debugPrint(
+        '[SUBMIT] Step 1: Uploading image (${bytes.length} bytes) to Firebase Storage...');
     final ref = FirebaseStorage.instance
         .ref()
         .child('submissions')
@@ -191,7 +201,8 @@ class ApiService {
   /// On network/parse failure returns a safe fallback (always approved).
   Future<Map<String, dynamic>> _classifyWithImage(
       Uint8List imageBytes, String description) async {
-    debugPrint('[SUBMIT AI] Sending image (${imageBytes.length} bytes) + description to AI...');
+    debugPrint(
+        '[SUBMIT AI] Sending image (${imageBytes.length} bytes) + description to AI...');
     try {
       // Compress: cap at 800KB of base64 to stay under API limits
       Uint8List sendBytes = imageBytes;
@@ -213,7 +224,8 @@ class ApiService {
           )
           .timeout(const Duration(seconds: 30));
 
-      debugPrint('[SUBMIT AI] Response: status=${res.statusCode} len=${res.body.length}');
+      debugPrint(
+          '[SUBMIT AI] Response: status=${res.statusCode} len=${res.body.length}');
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
@@ -258,7 +270,7 @@ class ApiService {
     required String collegeId,
     required String role,
     required Uint8List imageBytes,
-    required String imageBase64,  // kept for API compat but NOT sent to backend
+    required String imageBase64, // kept for API compat but NOT sent to backend
     required String description,
     bool isPredefined = false,
     String? predefinedActionId,
@@ -299,12 +311,10 @@ class ApiService {
     final eWaste = (ai['eWasteKg'] as num? ?? 0).toDouble();
     final costSaving =
         (ai['estimatedCostSavingRupees'] as num? ?? 0).toDouble();
-    final impactSummary =
-        ai['impactSummary'] as String? ?? 'Great eco action!';
+    final impactSummary = ai['impactSummary'] as String? ?? 'Great eco action!';
     final realWorld = ai['realWorldEquivalent'] as String? ?? '';
 
-    debugPrint(
-        '[SUBMIT] AI result: actionType=$actionType stardust=$stardust');
+    debugPrint('[SUBMIT] AI result: actionType=$actionType stardust=$stardust');
 
     // ── Step 3: Save to Firestore ──────────────────────────────────────────────
     final now = DateTime.now().toUtc().toIso8601String();
@@ -426,7 +436,8 @@ class ApiService {
         debugPrint('[Dashboard] OK — keys=${data.keys.join(",")}');
         return data;
       }
-      debugPrint('[Dashboard] HTTP ${res.statusCode} — using Firestore fallback');
+      debugPrint(
+          '[Dashboard] HTTP ${res.statusCode} — using Firestore fallback');
     } catch (e) {
       debugPrint('[Dashboard] exception: $e — using Firestore fallback');
     }
@@ -459,8 +470,7 @@ class ApiService {
     // Default challenge fallback
     return {
       'title': 'This week: Reduce single-use plastic in 3 meals.',
-      'description':
-          'Log each plastic-free meal to earn bonus stardust!',
+      'description': 'Log each plastic-free meal to earn bonus stardust!',
       'pointReward': 50,
     };
   }
@@ -517,35 +527,229 @@ class ApiService {
   }
 
   /// Fetch personal impact report for a user.
+  /// Tries backend first (15 s), then falls back to Firestore-direct computation.
   Future<Map<String, dynamic>> getImpactReport(String userId) async {
-    debugPrint('[Report] GET $_baseUrl/dashboard/impact-report/$userId');
+    debugPrint('[Report] GET $_baseUrl/dashboard/impact-report/user/$userId');
     try {
       final res = await http
-          .get(Uri.parse('$_baseUrl/dashboard/impact-report/$userId'), headers: _headers)
-          .timeout(const Duration(seconds: 30));
-      _assertOk(res);
-      return jsonDecode(res.body) as Map<String, dynamic>;
+          .get(Uri.parse('$_baseUrl/dashboard/impact-report/user/$userId'),
+              headers: _headers)
+          .timeout(const Duration(seconds: 15));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      debugPrint('[Report] HTTP ${res.statusCode} — falling back to Firestore');
     } catch (e) {
-      debugPrint('[Report] exception: $e');
-      rethrow;
+      debugPrint('[Report] exception: $e — falling back to Firestore');
     }
+    return _buildLocalImpactReport(userId);
   }
 
   /// Fetch college-wide impact report.
+  /// Tries backend first (15 s), then falls back to Firestore-direct computation.
   Future<Map<String, dynamic>> getCollegeImpactReport(String collegeId) async {
-    debugPrint('[Report] GET $_baseUrl/dashboard/impact-report/college/$collegeId');
+    debugPrint(
+        '[Report] GET $_baseUrl/dashboard/impact-report/college/$collegeId');
     try {
       final res = await http
-          .get(Uri.parse('$_baseUrl/dashboard/impact-report/college/$collegeId'),
+          .get(
+              Uri.parse('$_baseUrl/dashboard/impact-report/college/$collegeId'),
               headers: _headers)
-          .timeout(const Duration(seconds: 30));
-      _assertOk(res);
-      return jsonDecode(res.body) as Map<String, dynamic>;
+          .timeout(const Duration(seconds: 15));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      debugPrint('[Report] HTTP ${res.statusCode} — falling back to Firestore');
     } catch (e) {
-      debugPrint('[Report] exception: $e');
-      rethrow;
+      debugPrint('[Report] exception: $e — falling back to Firestore');
     }
+    return _buildLocalCollegeImpactReport(collegeId);
   }
+
+  // ─── Local (Firestore-direct) Impact Report ──────────────────────────────────
+  // Used as a fallback when the backend is unreachable or cold-starting.
+
+  Future<Map<String, dynamic>> _buildLocalImpactReport(String userId) async {
+    debugPrint(
+        '[Report] Building local impact report from Firestore for user=$userId');
+    final snap = await _db
+        .collection('submissions')
+        .where('userId', isEqualTo: userId)
+        .get();
+    final subs = snap.docs.map((d) => d.data()).toList();
+    return _aggregateSubmissions(subs);
+  }
+
+  Future<Map<String, dynamic>> _buildLocalCollegeImpactReport(
+      String collegeId) async {
+    debugPrint(
+        '[Report] Building local college impact report from Firestore for college=$collegeId');
+    final snap = await _db
+        .collection('submissions')
+        .where('collegeId', isEqualTo: collegeId)
+        .get();
+    final subs = snap.docs.map((d) => d.data()).toList();
+    return _aggregateSubmissions(subs);
+  }
+
+  /// Aggregates a list of Firestore submission maps into the same shape
+  /// that the backend returns, so the ImpactReportScreen works identically.
+  Map<String, dynamic> _aggregateSubmissions(List<Map<String, dynamic>> subs) {
+    double totalCo2 = 0, totalEnergy = 0, totalWater = 0, totalStardust = 0;
+    final actionBreakdown = <String, int>{};
+
+    // Time-series buckets: key → {label, co2Kg, energyKwh, waterL, actions}
+    final weeklyBuckets = <String, Map<String, dynamic>>{};
+    final monthlyBuckets = <String, Map<String, dynamic>>{};
+    final yearlyBuckets = <String, Map<String, dynamic>>{};
+
+    for (final s in subs) {
+      final co2 = (s['co2ReducedKg'] as num? ?? 0).toDouble();
+      final energy = (s['energySavedKwh'] as num? ?? 0).toDouble();
+      final water = (s['waterSavedLiters'] as num? ?? 0).toDouble();
+      final dust = (s['stardustAwarded'] as num? ?? 0).toDouble();
+      final action = s['actionType'] as String? ?? 'other';
+
+      totalCo2 += co2;
+      totalEnergy += energy;
+      totalWater += water;
+      totalStardust += dust;
+      actionBreakdown[action] = (actionBreakdown[action] ?? 0) + 1;
+
+      // Parse date
+      DateTime dt;
+      try {
+        dt = DateTime.parse((s['createdAt'] as String? ?? '')
+            .split('+')[0]
+            .replaceAll('Z', ''));
+      } catch (_) {
+        dt = DateTime.now();
+      }
+
+      // Week bucket — ISO week number: (dayOfYear - weekday + 10) ~/ 7
+      final weekStart = dt.subtract(Duration(days: dt.weekday - 1));
+      final weekEnd = weekStart.add(const Duration(days: 6));
+      final dayOfYear = dt.difference(DateTime(dt.year, 1, 1)).inDays + 1;
+      final isoWeek = (dayOfYear - dt.weekday + 10) ~/ 7;
+      final weekKey = '${dt.year}-W${_twoDigit(isoWeek.clamp(1, 53))}';
+      final weekLabel = '${_mmmDd(weekStart)}–${_mmmDd(weekEnd)}';
+      _addToBucket(weeklyBuckets, weekKey, weekLabel, co2, energy, water);
+
+      // Month bucket
+      final monthKey = '${dt.year}-${_twoDigit(dt.month)}';
+      final monthLabel = '${_monthName(dt.month)} ${dt.year}';
+      _addToBucket(monthlyBuckets, monthKey, monthLabel, co2, energy, water);
+
+      // Year bucket
+      final yearKey = '${dt.year}';
+      _addToBucket(yearlyBuckets, yearKey, yearKey, co2, energy, water);
+    }
+
+    // Sort chronologically
+    List<Map<String, dynamic>> sorted(Map<String, Map<String, dynamic>> m) => m
+        .entries
+        .map((e) => <String, dynamic>{'period': e.key, ...e.value})
+        .toList()
+      ..sort(
+          (a, b) => (a['period'] as String).compareTo(b['period'] as String));
+
+    final weekly = sorted(weeklyBuckets);
+    final monthly = sorted(monthlyBuckets);
+    final yearly = sorted(yearlyBuckets);
+
+    Map<String, dynamic> toChartSeries(List<Map<String, dynamic>> buckets) => {
+          'labels': buckets.map((b) => b['label'] ?? b['period']).toList(),
+          'co2': buckets.map((b) => _round(b['co2Kg'])).toList(),
+          'energy': buckets.map((b) => _round(b['energyKwh'])).toList(),
+          'water': buckets.map((b) => _round(b['waterL'])).toList(),
+          'actions': buckets.map((b) => b['actions']).toList(),
+        };
+
+    final total = subs.length;
+    final narrative = total == 0
+        ? '## 🌍 Sustainability Impact Report\n\n*No eco-actions logged yet. Start making an impact today!*'
+        : '## 🌍 Sustainability Impact Report\n\n'
+            '### ✨ Overall Impact\nAcross **$total recorded actions**:\n\n'
+            '🌿 **${totalCo2.toStringAsFixed(1)} kg of CO₂** reduced\n\n'
+            '⚡ **${totalEnergy.toStringAsFixed(1)} kWh** of energy saved\n\n'
+            '💧 **${totalWater.toStringAsFixed(0)} liters** of water saved\n\n'
+            '✨ **${totalStardust.toInt()} Stardust** earned';
+
+    return {
+      'summary': {
+        'totalCo2Kg': _roundDouble(totalCo2),
+        'totalEnergyKwh': _roundDouble(totalEnergy),
+        'totalWaterL': _roundDouble(totalWater),
+        'totalStardust': totalStardust,
+        'totalActions': total,
+      },
+      'narrativeReport': narrative,
+      'weekly': weekly,
+      'monthly': monthly,
+      'yearly': yearly,
+      'chartSeries': {
+        'weekly': toChartSeries(weekly),
+        'monthly': toChartSeries(monthly),
+        'yearly': toChartSeries(yearly),
+      },
+      'actionBreakdown': actionBreakdown,
+      'blindSpots': const [],
+    };
+  }
+
+  void _addToBucket(Map<String, Map<String, dynamic>> buckets, String key,
+      String label, double co2, double energy, double water) {
+    buckets.putIfAbsent(
+        key,
+        () => {
+              'label': label,
+              'co2Kg': 0.0,
+              'energyKwh': 0.0,
+              'waterL': 0.0,
+              'actions': 0,
+            });
+    buckets[key]!['co2Kg'] = (buckets[key]!['co2Kg'] as double) + co2;
+    buckets[key]!['energyKwh'] =
+        (buckets[key]!['energyKwh'] as double) + energy;
+    buckets[key]!['waterL'] = (buckets[key]!['waterL'] as double) + water;
+    buckets[key]!['actions'] = (buckets[key]!['actions'] as int) + 1;
+  }
+
+  double _round(dynamic v) =>
+      double.parse(((v as num?) ?? 0).toStringAsFixed(2));
+  double _roundDouble(double v) => double.parse(v.toStringAsFixed(2));
+  String _twoDigit(int n) => n.toString().padLeft(2, '0');
+  String _mmmDd(DateTime d) => '${_monthAbbr(d.month)} ${d.day}';
+  String _monthAbbr(int m) => const [
+        '',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ][m];
+  String _monthName(int m) => const [
+        '',
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
+      ][m];
 }
 
 /// Thrown by [ApiService.submitAction] when the AI explicitly rejects

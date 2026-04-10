@@ -15,6 +15,7 @@ class AuthService {
     required String state,
     required String country,
     String? institution,
+    String? collegeId,
   }) async {
     String uid;
 
@@ -48,6 +49,7 @@ class AuthService {
       'state': state,
       'country': country,
       'institution': institution ?? '',
+      'collegeId': collegeId,
       'role': role,
       'stardust': 0,
       'weeklyStreak': 0,

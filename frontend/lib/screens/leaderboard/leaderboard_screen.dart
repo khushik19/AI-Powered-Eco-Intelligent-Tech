@@ -14,8 +14,10 @@ class LeaderboardScreen extends StatefulWidget {
 }
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
-  String _filter = 'Global';
-  final List<String> _filters = ['Global', 'Institution', 'City', 'State'];
+  late String _filter;
+  late List<String> _filters;
+
+  bool get _isCollege => widget.userData['role'] == 'college_org';
 
   List<Map<String, dynamic>> _data = [];
   bool _isLoading = true;
@@ -24,6 +26,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   void initState() {
     super.initState();
+    if (_isCollege) {
+      _filter = 'All Colleges';
+      _filters = ['All Colleges'];
+    } else {
+      _filter = 'Global';
+      _filters = ['Global', 'Institution', 'City', 'State'];
+    }
     _fetchLeaderboard();
   }
 
@@ -52,11 +61,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           break;
       }
 
-      final results = await ApiService.instance.getIndividualLeaderboard(
-        collegeId: collegeId,
-        city: city,
-        state: state,
-      );
+      List<Map<String, dynamic>> results;
+      if (_isCollege) {
+        results = await ApiService.instance.getCollegeLeaderboard();
+      } else {
+        results = await ApiService.instance.getIndividualLeaderboard(
+          collegeId: collegeId,
+          city: city,
+          state: state,
+        );
+      }
+      
       setState(() {
         _data = results;
         _isLoading = false;
@@ -82,6 +97,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       case 'State':
         final state = widget.userData['state'] as String?;
         return state != null ? 'Showing: $state' : 'No state in your profile';
+      case 'All Colleges':
+        return 'Ranking colleges by Accreditation Score';
       default:
         return '';
     }
@@ -222,8 +239,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           child: _PodiumCard(
                             rank: 2,
                             name: top3[1]['name'] as String? ?? 'Unknown',
-                            stardust:
-                                (top3[1]['stardust'] as num?)?.toInt() ?? 0,
+                            stardust: _isCollege 
+                                ? (top3[1]['accreditationScore'] as num?)?.toInt() ?? 0
+                                : (top3[1]['stardust'] as num?)?.toInt() ?? 0,
                             height: 120,
                             color: const Color(0xFFC0C0C0),
                           ),
@@ -233,8 +251,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           child: _PodiumCard(
                             rank: 1,
                             name: top3[0]['name'] as String? ?? 'Unknown',
-                            stardust:
-                                (top3[0]['stardust'] as num?)?.toInt() ?? 0,
+                            stardust: _isCollege 
+                                ? (top3[0]['accreditationScore'] as num?)?.toInt() ?? 0
+                                : (top3[0]['stardust'] as num?)?.toInt() ?? 0,
                             height: 160,
                             color: AppColors.stardustGold,
                           ),
@@ -244,8 +263,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           child: _PodiumCard(
                             rank: 3,
                             name: top3[2]['name'] as String? ?? 'Unknown',
-                            stardust:
-                                (top3[2]['stardust'] as num?)?.toInt() ?? 0,
+                            stardust: _isCollege 
+                                ? (top3[2]['accreditationScore'] as num?)?.toInt() ?? 0
+                                : (top3[2]['stardust'] as num?)?.toInt() ?? 0,
                             height: 100,
                             color: const Color(0xFFCD7F32),
                           ),
@@ -259,11 +279,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     final rank = i + 4;
                     final isUser =
                         r['name'] == widget.userData['name'];
-                    final stardust =
-                        (r['stardust'] as num?)?.toInt() ?? 0;
-                    final institution = r['collegeId'] as String? ??
-                        r['institution'] as String? ??
-                        '—';
+                    final stardust = _isCollege
+                        ? (r['accreditationScore'] as num?)?.toInt() ?? 0
+                        : (r['stardust'] as num?)?.toInt() ?? 0;
+                    final institution = _isCollege
+                        ? '${r['city'] ?? ''}, ${r['state'] ?? ''}'.trim()
+                        : r['collegeId'] as String? ?? r['institution'] as String? ?? '—';
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: LiquidGlassCard(

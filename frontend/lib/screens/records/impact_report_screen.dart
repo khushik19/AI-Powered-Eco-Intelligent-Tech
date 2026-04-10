@@ -717,7 +717,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
                     radius: 4,
                     color: color,
                     strokeWidth: 1.5,
-                    strokeColor: AppColors.backgroundPrimary,
+                    strokeColor: AppColors.background,
                   ),
                 ),
                 belowBarData: BarAreaData(

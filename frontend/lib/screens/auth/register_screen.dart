@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../config/app_colors.dart';
 import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
@@ -28,6 +29,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   XFile? _profilePhoto;
   bool _isLoading = false;
+  
+  List<Map<String, dynamic>> _colleges = [];
+  String? _selectedCollegeId;
+  bool _isFetchingColleges = false;
+  bool _showOtherInstitution = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.userType == 'student_employee') {
+      _fetchColleges();
+    }
+  }
+
+  Future<void> _fetchColleges() async {
+    setState(() => _isFetchingColleges = true);
+    try {
+      final snap = await FirebaseFirestore.instance.collection('colleges').get();
+      final List<Map<String, dynamic>> colleges = snap.docs.map((d) {
+        return {'id': d.id, ...d.data()};
+      }).toList();
+      
+      // Sort alphabetically
+      colleges.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
+      
+      if (!mounted) return;
+      setState(() {
+        _colleges = colleges;
+      });
+    } catch (e) {
+      debugPrint('Error fetching colleges: $e');
+    } finally {
+      if (mounted) setState(() => _isFetchingColleges = false);
+    }
+  }
 
   bool get _needsInstitution =>
       widget.userType == 'student_employee' || widget.userType == 'college_org';
@@ -69,6 +105,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             state: _stateController.text.trim(),
             country: _countryController.text.trim(),
             institution: _institutionController.text.trim(),
+            collegeId: (_selectedCollegeId == 'other') ? null : _selectedCollegeId,
             idNumber: _idController.text.trim(),
           ),
         ),
@@ -256,15 +293,66 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ? 'ORGANISATION DETAILS'
                         : 'INSTITUTION DETAILS'),
                     const SizedBox(height: 12),
-                    _buildField(
-                      controller: _institutionController,
-                      hint: widget.userType == 'college_org'
-                          ? 'Official Organisation Name'
-                          : 'Institution / Organisation Name',
-                      icon: Icons.business_outlined,
-                      validator: (v) =>
-                          v == null || v.isEmpty ? 'Institution name is required' : null,
-                    ),
+                    if (widget.userType == 'college_org')
+                      _buildField(
+                        controller: _institutionController,
+                        hint: 'Official Organisation Name',
+                        icon: Icons.business_outlined,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Institution name is required' : null,
+                      )
+                    else if (widget.userType == 'student_employee') ...[
+                      if (_isFetchingColleges)
+                         const Center(child: CircularProgressIndicator(color: AppColors.bioTeal))
+                      else
+                         GlassCard(
+                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                           child: DropdownButtonFormField<String>(
+                             value: _selectedCollegeId,
+                             decoration: const InputDecoration(
+                               border: InputBorder.none,
+                               icon: Icon(Icons.business_outlined, color: AppColors.bioTeal, size: 20),
+                             ),
+                             hint: const Text('Select your College', style: TextStyle(color: AppColors.textMuted, fontFamily: 'Outfit')),
+                             dropdownColor: AppColors.backgroundSecondary,
+                             style: const TextStyle(color: AppColors.textPrimary, fontFamily: 'Outfit', fontSize: 14),
+                             isExpanded: true,
+                             items: [
+                               ..._colleges.map((c) => DropdownMenuItem<String>(
+                                 value: c['id'],
+                                 child: Text(c['name'] ?? 'Unknown College'),
+                               )),
+                               const DropdownMenuItem(
+                                 value: 'other',
+                                 child: Text('Other (Not Listed)'),
+                               ),
+                             ],
+                             onChanged: (val) {
+                               setState(() {
+                                 _selectedCollegeId = val;
+                                 _showOtherInstitution = (val == 'other');
+                                 if (val != 'other' && val != null) {
+                                   final college = _colleges.firstWhere((c) => c['id'] == val);
+                                   _institutionController.text = college['name'] ?? '';
+                                 } else {
+                                   _institutionController.text = '';
+                                 }
+                               });
+                             },
+                             validator: (v) => v == null ? 'Please select a college' : null,
+                           ),
+                         ),
+                      if (_showOtherInstitution) ...[
+                        const SizedBox(height: 12),
+                        _buildField(
+                          controller: _institutionController,
+                          hint: 'Enter your College Name',
+                          icon: Icons.edit_outlined,
+                          validator: (v) =>
+                              v == null || v.isEmpty ? 'Institution name is required' : null,
+                        ),
+                      ],
+                    ],
                     const SizedBox(height: 12),
                     _buildField(
                       controller: _idController,

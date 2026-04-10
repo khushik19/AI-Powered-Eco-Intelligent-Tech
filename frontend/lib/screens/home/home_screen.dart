@@ -278,15 +278,11 @@ class _DashboardTabState extends State<_DashboardTab> {
                                 decoration: const BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: LinearGradient(
-                                    colors: [
-                                      AppColors.bioTeal,
-                                      AppColors.kelp
-                                    ],
+                                    colors: [AppColors.bioTeal, AppColors.kelp],
                                   ),
                                 ),
                                 child: const Icon(Icons.eco,
-                                    color: AppColors.midnightBlack,
-                                    size: 22),
+                                    color: AppColors.midnightBlack, size: 22),
                               ),
                             ),
                           ),
@@ -304,8 +300,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                             SizedBox(
                               width: 16,
                               height: 16,
-                              child: CustomPaint(
-                                  painter: _FirePainter()),
+                              child: CustomPaint(painter: _FirePainter()),
                             ),
                             const SizedBox(width: 5),
                             Text(
@@ -333,8 +328,8 @@ class _DashboardTabState extends State<_DashboardTab> {
                               width: 16,
                               height: 16,
                               child: CustomPaint(
-                                painter: _StarPainter(
-                                    color: AppColors.stardustGold),
+                                painter:
+                                    _StarPainter(color: AppColors.stardustGold),
                               ),
                             ),
                             const SizedBox(width: 5),
@@ -351,6 +346,20 @@ class _DashboardTabState extends State<_DashboardTab> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '10,000 Stardust = 1 Carbon Credit',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontFamily: 'Outfit',
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ),
 
                   const SizedBox(height: 24),
@@ -664,8 +673,7 @@ class _StarPainter extends CustomPainter {
 
     final path = Path();
     for (int i = 0; i < numPoints * 2; i++) {
-      final angle =
-          (i * math.pi / numPoints) - math.pi / 2;
+      final angle = (i * math.pi / numPoints) - math.pi / 2;
       final r = i.isEven ? outerR : innerR;
       final x = cx + r * math.cos(angle);
       final y = cy + r * math.sin(angle);

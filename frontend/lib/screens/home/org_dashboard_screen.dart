@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../config/app_colors.dart';
 import '../../services/api_service.dart';
@@ -61,6 +62,7 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
                 : _DashboardContent(
                     data: _data!,
                     collegeName: widget.userData['name'] as String? ?? 'Your College',
+                    uid: widget.userData['uid'] as String? ?? '',
                   ),
       ),
     );
@@ -72,7 +74,8 @@ class _OrgDashboardScreenState extends State<OrgDashboardScreen> {
 class _DashboardContent extends StatelessWidget {
   final Map<String, dynamic> data;
   final String collegeName;
-  const _DashboardContent({required this.data, required this.collegeName});
+  final String uid;
+  const _DashboardContent({required this.data, required this.collegeName, required this.uid});
 
   Map<String, dynamic> get college =>
       (data['college'] as Map<String, dynamic>? ?? {});
@@ -156,7 +159,15 @@ class _DashboardContent extends StatelessWidget {
                   _Recommendations(recs: recommendations)
                       .animate()
                       .fadeIn(delay: 600.ms),
+                  const SizedBox(height: 20),
                 ],
+
+                // Students Leaderboard
+                _SectionLabel('Your Top Students'),
+                const SizedBox(height: 10),
+                _CollegeStudentLeaderboard(collegeId: uid)
+                    .animate()
+                    .fadeIn(delay: 700.ms),
 
                 const SizedBox(height: 160),
               ],
@@ -784,6 +795,95 @@ class _ErrorView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── Students Leaderboard ─────────────────────────────────────────────────────
+
+class _CollegeStudentLeaderboard extends StatelessWidget {
+  final String collegeId;
+  const _CollegeStudentLeaderboard({required this.collegeId});
+
+  @override
+  Widget build(BuildContext context) {
+    if (collegeId.isEmpty) return const SizedBox.shrink();
+    
+    // Query users by collegeId. 
+    // We sort locally by 'stardust' to prevent requiring a Firestore Composite Index!
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .where('collegeId', isEqualTo: collegeId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: AppColors.bioTeal));
+        }
+        if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}', style: const TextStyle(color: AppColors.error));
+        }
+        
+        var docs = snapshot.data?.docs ?? [];
+        if (docs.isEmpty) {
+          return GlassCard(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'No students have registered under your college yet.',
+              style: const TextStyle(color: AppColors.textMuted, fontFamily: 'Outfit', fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+        
+        // Local sort
+        final list = docs.map((d) => d.data() as Map<String, dynamic>).toList();
+        list.sort((a, b) => (b['stardust'] as num? ?? 0).compareTo(a['stardust'] as num? ?? 0));
+
+        // Let's cap at top 50 
+        final displayList = list.take(50).toList();
+
+        return GlassCard(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            children: displayList.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final data = entry.value;
+              final name = data['name'] ?? 'Unknown';
+              final stardust = data['stardust'] ?? 0;
+              
+              Color rankColor = AppColors.bioTeal.withOpacity(0.3);
+              Color textColor = AppColors.textMuted;
+              if (idx == 0) {
+                rankColor = const Color(0xFFFFD700); // Gold
+                textColor = const Color(0xFFFFD700);
+              } else if (idx == 1) {
+                rankColor = const Color(0xFFC0C0C0); // Silver
+                textColor = const Color(0xFFC0C0C0);
+              } else if (idx == 2) {
+                rankColor = const Color(0xFFCD7F32); // Bronze
+                textColor = const Color(0xFFCD7F32);
+              }
+              
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: rankColor.withOpacity(0.15),
+                  child: Text('${idx + 1}', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+                title: Text(name, style: const TextStyle(color: AppColors.textPrimary, fontFamily: 'Outfit', fontSize: 14)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.auto_awesome, color: AppColors.neonMoss, size: 14),
+                    const SizedBox(width: 6),
+                    Text('$stardust', style: const TextStyle(color: AppColors.neonMoss, fontWeight: FontWeight.bold, fontFamily: 'Montserrat', fontSize: 13)),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 }

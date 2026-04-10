@@ -476,6 +476,9 @@ def _fetch_college_impact_report(college_id: str) -> dict:
 
 
 # ── API Endpoints ─────────────────────────────────────────────────────────────
+# IMPORTANT: more-specific routes MUST come before wildcard routes in FastAPI.
+# /impact-report/college/{id} must be registered before /impact-report/{user_id}
+# otherwise FastAPI will match the word "college" as a user_id.
 
 @router.get("/impact-report/college/{college_id}")
 async def college_impact_report(college_id: str):
@@ -486,10 +489,12 @@ async def college_impact_report(college_id: str):
     return await asyncio.to_thread(_fetch_college_impact_report, college_id)
 
 
+@router.get("/impact-report/user/{user_id}")
 @router.get("/impact-report/{user_id}")
 async def user_impact_report(user_id: str):
     """
     Individual user impact report.
     Returns all 3 features: narrativeReport, chartSeries, blindSpots.
+    Also accessible at /impact-report/user/{user_id} as an explicit alias.
     """
     return await asyncio.to_thread(_fetch_user_impact_report, user_id)
