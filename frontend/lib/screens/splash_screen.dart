@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../config/app_colors.dart';
 import '../widgets/cosmic_background.dart';
-import '../widgets/loading_fact_widget.dart';
 import 'welcome_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -66,7 +65,7 @@ class _SplashScreenState extends State<SplashScreen>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.cosmicPurple.withOpacity(
+                          color: AppColors.tealBlue.withOpacity(
                               0.3 + _pulseController.value * 0.4),
                           blurRadius: 40 + _pulseController.value * 30,
                           spreadRadius: 5,
@@ -85,15 +84,15 @@ class _SplashScreenState extends State<SplashScreen>
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [
-                            AppColors.cosmicPurple,
-                            AppColors.nebulaBlue,
+                            AppColors.forestGreen,
+                            AppColors.tealBlue,
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                       ),
                       child: const Center(
-                        child: Text('🌌', style: TextStyle(fontSize: 48)),
+                        child: Text('🌿', style: TextStyle(fontSize: 48)),
                       ),
                     ),
                   ),
@@ -111,9 +110,9 @@ class _SplashScreenState extends State<SplashScreen>
               ShaderMask(
                 shaderCallback: (bounds) => const LinearGradient(
                   colors: [
-                    AppColors.nebulaBlue,
-                    AppColors.cosmicPurple,
-                    AppColors.stardustGold,
+                    AppColors.oliveGreen,
+                    AppColors.cream,
+                    AppColors.tealBlue,
                   ],
                 ).createShader(bounds),
                 child: const Text(
@@ -131,9 +130,9 @@ class _SplashScreenState extends State<SplashScreen>
                   .fadeIn(delay: 400.ms, duration: 600.ms)
                   .slideY(begin: 0.3, end: 0),
               const SizedBox(height: 16),
-              // Tagline
+              // Tagline — no emoji
               Text(
-                'Clean Cosmos says Hi 👋',
+                'Clean Cosmos says Hi',
                 style: TextStyle(
                   fontFamily: 'Outfit',
                   fontSize: 16,
@@ -145,7 +144,7 @@ class _SplashScreenState extends State<SplashScreen>
                   .fadeIn(delay: 700.ms, duration: 600.ms)
                   .slideY(begin: 0.2, end: 0),
               const Spacer(),
-              // Loading indicator
+              // Loading bar only — no fact
               SizedBox(
                 width: 160,
                 child: ClipRRect(
@@ -153,15 +152,13 @@ class _SplashScreenState extends State<SplashScreen>
                   child: LinearProgressIndicator(
                     backgroundColor: AppColors.glassWhite,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.cosmicPurple,
+                      AppColors.oliveGreen,
                     ),
                     minHeight: 3,
                   ),
                 ),
               ).animate().fadeIn(delay: 1000.ms),
-              const SizedBox(height: 32),
-              const LoadingFactWidget().animate().fadeIn(delay: 1200.ms),
-              const Spacer(),
+              const SizedBox(height: 60),
             ],
           ),
         ),
