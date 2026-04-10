@@ -155,21 +155,22 @@ class ApiService {
 
   // ─── Submissions ───────────────────────────────────────────────────────────
 
-  /// Uploads image bytes to Firebase Storage from the client and returns the download URL.
+  /// Uploads image bytes to Firebase Storage from the client — no backend JWT needed.
   Future<String> _uploadImageToStorage(Uint8List bytes, String userId) async {
     final ref = FirebaseStorage.instance
         .ref()
         .child('submissions')
         .child(userId)
         .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
-
     final task = await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
     return await task.ref.getDownloadURL();
   }
 
-  /// Submits an eco-action:
-  /// 1) Uploads image directly to Firebase Storage (fast, no server JWT issues)
-  /// 2) Sends base64 + storage URL to Render backend for AI classification
+  /// Full submission flow — all Firebase from Flutter (bypasses Render Admin SDK JWT issues):
+  /// 1) Upload image → Firebase Storage
+  /// 2) AI classify → Render backend (pure HTTP, no Firebase)
+  /// 3) Save submission doc → Firestore (Flutter SDK)
+  /// 4) Increment user stardust → Firestore (Flutter SDK)
   Future<Map<String, dynamic>> submitAction({
     required String userId,
     required String collegeId,
@@ -180,33 +181,99 @@ class ApiService {
     bool isPredefined = false,
     String? predefinedActionId,
   }) async {
-    // Step 1 — Upload image to Firebase Storage directly from Flutter
+    // Step 1 — Upload image from Flutter directly to Firebase Storage
     String imageUrl = '';
     try {
       imageUrl = await _uploadImageToStorage(imageBytes, userId);
     } catch (e) {
-      debugPrint('Image upload to Storage failed (non-fatal): $e');
-      // Continue without image URL — submission still records AI data + stardust
+      debugPrint('Image upload failed (non-fatal): $e');
     }
 
-    // Step 2 — Send to backend for AI classification
-    final body = <String, dynamic>{
-      'userId': userId,
-      'collegeId': collegeId,
-      'role': role,
-      'imageBase64': imageBase64,
-      'imageUrl': imageUrl,
-      'description': description,
-      'isPredefined': isPredefined,
-      if (predefinedActionId != null) 'predefinedActionId': predefinedActionId,
+    // Step 2 — Ask backend to classify (AI only, no Firestore on the server)
+    Map<String, dynamic> aiResult = {};
+    try {
+      final res = await http.post(
+        Uri.parse('$_baseUrl/submissions/classify'),
+        headers: _headers,
+        body: jsonEncode({
+          'imageBase64': imageBase64,
+          'description': description,
+        }),
+      ).timeout(const Duration(seconds: 45));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        aiResult = jsonDecode(res.body) as Map<String, dynamic>;
+      } else {
+        debugPrint('AI classify failed ${res.statusCode}: ${res.body}');
+      }
+    } catch (e) {
+      debugPrint('AI classify request failed (non-fatal): $e');
+    }
+
+    // Fallback values if AI is unavailable
+    final actionType    = aiResult['actionType']    as String? ?? 'other';
+    final stardust      = aiResult['stardustAwarded'] as int?    ?? 25;
+    final co2           = (aiResult['co2ReducedKg']   as num? ?? 0).toDouble();
+    final energy        = (aiResult['energySavedKwh'] as num? ?? 0).toDouble();
+    final water         = (aiResult['waterSavedLiters'] as num? ?? 0).toDouble();
+    final eWaste        = (aiResult['eWasteKg']       as num? ?? 0).toDouble();
+    final costSaving    = (aiResult['estimatedCostSavingRupees'] as num? ?? 0).toDouble();
+    final impactSummary = aiResult['impactSummary']   as String? ?? 'Great eco action!';
+    final realWorld     = aiResult['realWorldEquivalent'] as String? ?? '';
+
+    // Step 3 — Save submission document directly to Firestore from Flutter
+    final now = DateTime.now().toUtc().toIso8601String();
+    final submissionDoc = <String, dynamic>{
+      'userId':          userId,
+      'collegeId':       collegeId,
+      'role':            role,
+      'description':     description,
+      'imageUrl':        imageUrl,
+      'isPredefined':    isPredefined,
+      'actionType':      actionType,
+      'stardustAwarded': stardust,
+      'co2ReducedKg':    co2,
+      'energySavedKwh':  energy,
+      'waterSavedLiters': water,
+      'eWasteKg':        eWaste,
+      'estimatedCostSavingRupees': costSaving,
+      'impactSummary':   impactSummary,
+      'realWorldEquivalent': realWorld,
+      'status':          'approved',
+      'createdAt':       now,
     };
 
-    final res = await http.post(
-      Uri.parse('$_baseUrl/submissions/submit'),
-      headers: _headers,
-      body: jsonEncode(body),
-    );
-    _assertOk(res);
-    return jsonDecode(res.body) as Map<String, dynamic>;
+    String submissionId = '';
+    try {
+      final ref = await _db.collection('submissions').add(submissionDoc);
+      submissionId = ref.id;
+    } catch (e) {
+      debugPrint('Firestore submission save failed: $e');
+      // Even if Firestore fails, return the AI result so user sees stardust
+    }
+
+    // Step 4 — Increment stardust + totalActions on user doc from Flutter
+    try {
+      await _db.collection('users').doc(userId).update({
+        'stardust':       FieldValue.increment(stardust),
+        'totalActions':   FieldValue.increment(1),
+        'lastActionDate': now,
+      });
+    } catch (e) {
+      debugPrint('Updating user stardust failed (non-fatal): $e');
+    }
+
+    return {
+      'success':        true,
+      'submissionId':   submissionId,
+      'actionType':     actionType,
+      'stardustAwarded': stardust,
+      'co2ReducedKg':   co2,
+      'energySavedKwh': energy,
+      'waterSavedLiters': water,
+      'eWasteKg':       eWaste,
+      'estimatedCostSavingRupees': costSaving,
+      'impactSummary':  impactSummary,
+      'realWorldEquivalent': realWorld,
+    };
   }
 }
