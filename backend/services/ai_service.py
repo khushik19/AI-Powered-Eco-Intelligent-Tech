@@ -19,14 +19,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash-lite")
-HEADERS = {
-    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-    "Content-Type": "application/json",
-    "HTTP-Referer": "https://cleancosmos.app",   # can be anything
-    "X-Title": "Clean Cosmos"
-}
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free")
+
+
+def _get_headers() -> dict:
+    """Build headers lazily so env vars are always read fresh."""
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    return {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://cleancosmos.app",
+        "X-Title": "Clean Cosmos",
+    }
 
 
 # ── 1. Vision model: classify image + quantify impact ─────────────────────────
@@ -42,9 +46,11 @@ def classify_with_openrouter(image_base64: str, description: str) -> dict:
     """
     # Guard: no API key configured
     api_key = os.getenv("OPENROUTER_API_KEY", "")
-    if not api_key or api_key.strip() == "":
-        print("[AI] WARNING: OPENROUTER_API_KEY is not set. Using fallback classification.")
+    if not api_key or not api_key.strip():
+        print("[AI] WARNING: OPENROUTER_API_KEY not set — using fallback.")
         return _fallback_result(description)
+
+    model = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free")
 
     prompt = f"""You are an eco-action classifier for a sustainability rewards app called Clean Cosmos.
 The app awards "stardust" points to users for sustainable actions.
@@ -66,7 +72,7 @@ Analyze the image and the description carefully. Return ONLY valid JSON (no mark
 }}"""
 
     payload = {
-        "model": "google/gemini-pro-vision",   # use vision model for images
+        "model": model,   # vision-capable model from env (e.g. google/gemini-2.0-flash-exp:free)
         "messages": [
             {
                 "role": "user",
@@ -82,12 +88,13 @@ Analyze the image and the description carefully. Return ONLY valid JSON (no mark
         "max_tokens": 512,
     }
 
+    print(f"[AI] Classifying with model: {model}")
     try:
         response = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
-            headers=HEADERS,
+            headers=_get_headers(),
             json=payload,
-            timeout=30
+            timeout=25
         )
         response.raise_for_status()
         text = response.json()["choices"][0]["message"]["content"].strip()
@@ -142,7 +149,7 @@ def get_recommendations(data: dict) -> list:
         }
         res = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
-            headers=HEADERS,
+            headers=_get_headers(),
             json=payload,
             timeout=20
         )
@@ -185,7 +192,7 @@ def chat_with_openrouter(query: str, history: list = []) -> str:
         }
         res = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
-            headers=HEADERS,
+            headers=_get_headers(),
             json=payload,
             timeout=30
         )

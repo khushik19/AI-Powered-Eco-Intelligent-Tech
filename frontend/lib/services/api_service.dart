@@ -199,7 +199,7 @@ class ApiService {
           'imageBase64': imageBase64,
           'description': description,
         }),
-      ).timeout(const Duration(seconds: 45));
+      ).timeout(const Duration(seconds: 30));
       if (res.statusCode >= 200 && res.statusCode < 300) {
         aiResult = jsonDecode(res.body) as Map<String, dynamic>;
       } else {
