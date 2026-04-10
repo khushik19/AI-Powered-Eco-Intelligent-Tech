@@ -1,14 +1,18 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 from services.ai_service import classify_with_openrouter
-from services.firebase_service import save_submission, update_points, get_predefined_actions
-from datetime import datetime
 import asyncio
 
 router = APIRouter()
 
 
+class ClassifyRequest(BaseModel):
+    imageBase64: str
+    description: str
+
+
 class SubmissionRequest(BaseModel):
+    """Legacy endpoint kept for compatibility."""
     userId: str
     collegeId: str = ""
     role: str = "student"
@@ -16,59 +20,65 @@ class SubmissionRequest(BaseModel):
     description: str
     isPredefined: bool = False
     predefinedActionId: str = None
-    imageUrl: str = ""   # Frontend can upload to Firebase Storage and pass URL here
+    imageUrl: str = ""
+
+
+@router.post("/classify")
+async def classify_action(req: ClassifyRequest):
+    """
+    Pure AI classification — NO Firebase.
+    Returns AI analysis result (stardust, CO2, actionType, etc.).
+    The Flutter frontend saves to Firestore directly.
+    """
+    result = await asyncio.to_thread(
+        classify_with_openrouter, req.imageBase64, req.description
+    )
+    return {"success": True, **result}
 
 
 @router.post("/submit")
 async def submit_action(req: SubmissionRequest):
-    try:
-        # Step 1: AI classifies the image + description (OpenRouter)
-        result = await asyncio.to_thread(
-            classify_with_openrouter, req.imageBase64, req.description
-        )
+    """
+    Same as /classify but accepts full submission fields.
+    Firestore writes are handled by the Flutter frontend.
+    """
+    result = await asyncio.to_thread(
+        classify_with_openrouter, req.imageBase64, req.description
+    )
+    return {"success": True, **result}
 
-        # Step 2: Build Firestore document
-        # Image URL comes from frontend (it uploads directly to Firebase Storage)
-        # Backend never touches Firebase Storage — avoids JWT/timeout issues
-        submission = {
-            "userId": req.userId,
-            "collegeId": req.collegeId,
-            "role": req.role,
-            "description": req.description,
-            "imageUrl": req.imageUrl,   # passed from frontend or empty string
-            "isPredefined": req.isPredefined,
-            "actionType": result.get("actionType", "other"),
-            "stardustAwarded": result.get("stardustAwarded", 10),
-            "co2ReducedKg": result.get("co2ReducedKg", 0),
-            "energySavedKwh": result.get("energySavedKwh", 0),
-            "waterSavedLiters": result.get("waterSavedLiters", 0),
-            "eWasteKg": result.get("eWasteKg", 0),
-            "estimatedCostSavingRupees": result.get("estimatedCostSavingRupees", 0),
-            "impactSummary": result.get("impactSummary", ""),
-            "realWorldEquivalent": result.get("realWorldEquivalent", ""),
-            "status": "approved",
-            "createdAt": datetime.utcnow().isoformat()
-        }
 
-        # Step 3: Save to Firestore + update points (both in thread pool)
-        submission_id = await asyncio.to_thread(save_submission, submission)
-        await asyncio.to_thread(
-            update_points,
-            req.userId,
-            req.collegeId,
-            result.get("stardustAwarded", 10),
-            result
-        )
-
-        return {"success": True, "submissionId": submission_id, **result}
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+# Predefined actions list (no Firebase needed - hardcoded fallback)
+PREDEFINED_ACTIONS = {
+    "student": [
+        "Used public transport instead of private vehicle",
+        "Recycled plastic/paper/glass waste",
+        "Composted food waste",
+        "Reduced single-use plastic usage",
+        "Saved electricity (turned off unused lights/devices)",
+        "Collected and disposed e-waste properly",
+        "Saved water (shorter shower, fixed leaks)",
+        "Planted a tree or participated in plantation drive",
+        "Participated in campus cleanliness drive",
+        "Used reusable bag/bottle instead of disposable",
+    ],
+    "college": [
+        "Installed solar panels or renewable energy system",
+        "Launched campus recycling program",
+        "Organized e-waste collection drive",
+        "Implemented rainwater harvesting",
+        "Switched to LED lighting across campus",
+        "Created campus garden/composting facility",
+        "Introduced EV charging station",
+        "Reduced paper usage via digitalization",
+        "Organized sustainability awareness workshop",
+        "Achieved green building certification",
+    ],
+}
 
 
 @router.get("/predefined/{role}")
 async def get_predefined(role: str):
-    """Returns the list of preset eco-actions for the given role."""
-    return await asyncio.to_thread(get_predefined_actions, role)
+    """Returns preset eco-actions. Hardcoded — no Firebase needed."""
+    actions = PREDEFINED_ACTIONS.get(role, PREDEFINED_ACTIONS["student"])
+    return [{"id": str(i), "title": a, "category": "general"} for i, a in enumerate(actions)]
