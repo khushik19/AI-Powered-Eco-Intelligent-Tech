@@ -7,12 +7,12 @@ router = APIRouter()
 
 
 class ClassifyRequest(BaseModel):
-    imageBase64: str
+    imageBase64: str = ""
     description: str
 
 
 class SubmissionRequest(BaseModel):
-    imageBase64: str
+    imageBase64: str = ""
     description: str
     userId: str = ""
     collegeId: str = ""
@@ -23,29 +23,67 @@ class SubmissionRequest(BaseModel):
 @router.post("/classify")
 async def classify_action(req: ClassifyRequest):
     """
-    Pure AI classification — NO Firebase.
-    Returns AI analysis result (stardust, CO2, actionType, etc.).
-    The Flutter frontend saves to Firestore directly.
+    AI validation + classification endpoint.
+
+    Returns:
+      - success=True  + all impact fields  → save the submission in Flutter
+      - success=False + rejectionReason    → show rejection message to user, do NOT save
     """
     result = await asyncio.to_thread(
         classify_with_openrouter, req.imageBase64, req.description
     )
-    return {"success": True, **result}
+
+    is_legitimate = result.get("isLegitimate", True)
+
+    if not is_legitimate:
+        reason = result.get("rejectionReason") or "This doesn't appear to be a valid eco-action."
+        print(f"[Submission] REJECTED: {reason}")
+        return {
+            "success": False,
+            "rejected": True,
+            "rejectionReason": reason,
+            "impactSummary": result.get("impactSummary", reason),
+        }
+
+    # Legitimate — return full result for Flutter to save to Firestore
+    print(
+        f"[Submission] APPROVED: actionType={result.get('actionType')} "
+        f"stardust={result.get('stardustAwarded')}"
+    )
+    return {"success": True, "rejected": False, **result}
 
 
 @router.post("/submit")
 async def submit_action(req: SubmissionRequest):
     """
-    Same as /classify but accepts full submission fields.
-    Firestore writes are handled by the Flutter frontend.
+    Same as /classify but accepts full submission metadata.
+    Firestore writes are still done by the Flutter frontend after approval.
     """
     result = await asyncio.to_thread(
         classify_with_openrouter, req.imageBase64, req.description
     )
-    return {"success": True, **result}
+
+    is_legitimate = result.get("isLegitimate", True)
+
+    if not is_legitimate:
+        reason = result.get("rejectionReason") or "This doesn't appear to be a valid eco-action."
+        print(f"[Submission] REJECTED (userId={req.userId}): {reason}")
+        return {
+            "success": False,
+            "rejected": True,
+            "rejectionReason": reason,
+            "impactSummary": result.get("impactSummary", reason),
+        }
+
+    print(
+        f"[Submission] APPROVED (userId={req.userId}): "
+        f"actionType={result.get('actionType')} stardust={result.get('stardustAwarded')}"
+    )
+    return {"success": True, "rejected": False, **result}
 
 
-# Predefined actions list (no Firebase needed - hardcoded fallback)
+# ── Predefined actions ────────────────────────────────────────────────────────
+
 PREDEFINED_ACTIONS = {
     "student": [
         "Used public transport instead of private vehicle",
