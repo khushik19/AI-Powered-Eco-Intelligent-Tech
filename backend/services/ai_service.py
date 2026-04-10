@@ -45,7 +45,7 @@ Base your estimates on real environmental benchmarks. Be generous but realistic 
 
     # OpenRouter supports vision via base64 images in the message content
     payload = {
-        "model": "google/gemini-pro-vision",   # use vision model for images
+        "model": OPENROUTER_MODEL,   # dynamically use the model from .env (e.g. flash-lite / flash) which supports vision seamlessly
         "messages": [
             {
                 "role": "user",
@@ -71,6 +71,8 @@ Base your estimates on real environmental benchmarks. Be generous but realistic 
         headers=HEADERS,
         json=payload
     )
+    if not response.ok:
+        print(f"[OpenRouter ERROR in classification] Status {response.status_code}: {response.text}")
     response.raise_for_status()
     text = response.json()["choices"][0]["message"]["content"].strip()
     # Strip markdown fences if the model adds them anyway

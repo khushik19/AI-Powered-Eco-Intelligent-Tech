@@ -4,18 +4,25 @@ import firebase_admin
 from firebase_admin import credentials
 from dotenv import load_dotenv
 import os
-from routers import submissions, chatbot, challenges, leaderboard, dashboard, suggestions, auth
 
-load_dotenv()
+# ✅ Initialize Firebase FIRST — before any router/service imports
+cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "serviceAccountKey.json")
+if os.path.exists(cred_path):
+    cred = credentials.Certificate(cred_path)
+else:
+    import json
+    # On deployment (Render), we will pass the whole JSON as a string
+    cred_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
+    if not cred_json:
+        raise Exception("Missing Firebase Credentials! Check FIREBASE_CREDENTIALS_PATH or FIREBASE_CREDENTIALS_JSON")
+    cred = credentials.Certificate(json.loads(cred_json))
 
-# Initialize Firebase with your service account key
-cred = credentials.Certificate(os.getenv("FIREBASE_CREDENTIALS_PATH"))
 firebase_admin.initialize_app(cred, {
-    "storageBucket": f"{os.getenv('PROJECT_ID')}.appspot.com"
+    "storageBucket": f"{os.getenv('PROJECT_ID', 'ecotrack-hackathon')}.appspot.com"
 })
 
-# Import routers AFTER firebase_admin.initialize_app
-from routers import submissions, chatbot, challenges, leaderboard, dashboard, suggestions
+# Import routers AFTER firebase_admin.initialize_app()
+from routers import submissions, chatbot, challenges, leaderboard, dashboard, suggestions, auth
 
 app = FastAPI(title="Clean Cosmos API")
 

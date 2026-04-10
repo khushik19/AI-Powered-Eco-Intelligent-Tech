@@ -56,6 +56,8 @@ async def submit_action(req: SubmissionRequest):
         return {"success": True, "submissionId": submission_id, **result}
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 

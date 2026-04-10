@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../config/app_colors.dart';
+import '../../services/api_service.dart';
 import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
 
@@ -14,23 +15,107 @@ class LeaderboardScreen extends StatefulWidget {
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   String _filter = 'Global';
-  final List<String> _filters = ['Global', 'Institution', 'City', 'State', 'Country'];
+  // Country removed — backend only supports college_id, city, state filters
+  final List<String> _filters = ['Global', 'Institution', 'City', 'State'];
 
-  static final _mockData = [
-    {'name': 'Aryan Kapoor', 'institution': 'MIT Manipal', 'stardust': 840, 'emoji': '👑'},
-    {'name': 'Priya Sharma', 'institution': 'IIT Bombay', 'stardust': 720, 'emoji': '🌟'},
-    {'name': 'Ravi Mehta', 'institution': 'BITS Pilani', 'stardust': 650, 'emoji': '⭐'},
-    {'name': 'Neha Singh', 'institution': 'NIT Trichy', 'stardust': 590, 'emoji': '✨'},
-    {'name': 'Achal Goyal', 'institution': 'PIMR Indore', 'stardust': 480, 'emoji': '💫'},
-    {'name': 'Khushi Katiyar', 'institution': 'PIMR Indore', 'stardust': 460, 'emoji': '🌙'},
-    {'name': 'Siddharth Roy', 'institution': 'IIT Delhi', 'stardust': 410, 'emoji': '🔥'},
-    {'name': 'Anjali Verma', 'institution': 'Symbiosis', 'stardust': 380, 'emoji': '🌿'},
-  ];
+  List<Map<String, dynamic>> _data = [];
+  bool _isLoading = true;
+  String? _error;
+
+  // Emojis assigned by rank position
+  static const _rankEmojis = ['👑', '🌟', '⭐', '✨', '💫', '🌙', '🔥', '🌿', '💎', '🚀'];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLeaderboard();
+  }
+
+  /// Fetches leaderboard with params based on the currently selected filter.
+  Future<void> _fetchLeaderboard({String? filter}) async {
+    final activeFilter = filter ?? _filter;
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      String? collegeId;
+      String? city;
+      String? state;
+
+      switch (activeFilter) {
+        case 'Institution':
+          collegeId = widget.userData['collegeId'] as String?;
+          break;
+        case 'City':
+          city = widget.userData['city'] as String?;
+          break;
+        case 'State':
+          state = widget.userData['state'] as String?;
+          break;
+        default: // Global — no filter
+          break;
+      }
+
+      final results = await ApiService.instance.getIndividualLeaderboard(
+        collegeId: collegeId,
+        city: city,
+        state: state,
+      );
+      setState(() { _data = results; _isLoading = false; });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load rankings.${
+          _filter != 'Global' ? '\nTry a different filter or check your profile has ${_filter.toLowerCase()} info.' : ''
+        }';
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Returns a subtitle showing which value is being used to filter
+  String _filterHint() {
+    switch (_filter) {
+      case 'Institution':
+        final col = widget.userData['collegeId'] as String?
+            ?? widget.userData['institution'] as String?;
+        return col != null ? 'Showing: $col' : 'No institution in your profile';
+      case 'City':
+        final city = widget.userData['city'] as String?;
+        return city != null ? 'Showing: $city' : 'No city in your profile';
+      case 'State':
+        final state = widget.userData['state'] as String?;
+        return state != null ? 'Showing: $state' : 'No state in your profile';
+      default:
+        return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final top3 = _mockData.take(3).toList();
-    final rest = _mockData.skip(3).toList();
+    if (_isLoading) {
+      return const SafeArea(
+        child: Center(child: CircularProgressIndicator(color: AppColors.nebulaBlue)),
+      );
+    }
+    if (_error != null) {
+      return SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('⚠️', style: TextStyle(fontSize: 40)),
+              const SizedBox(height: 12),
+              Text(_error!, textAlign: TextAlign.center,
+                  style: const TextStyle(fontFamily: 'Outfit', color: AppColors.textSecondary)),
+              const SizedBox(height: 16),
+              GlassButton(text: 'Retry', onTap: _fetchLeaderboard),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Use real data from API
+    final top3 = _data.take(3).toList();
+    final rest = _data.skip(3).toList();
 
     return SafeArea(
       child: Column(
@@ -67,7 +152,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       final f = _filters[i];
                       final isActive = _filter == f;
                       return GestureDetector(
-                        onTap: () => setState(() => _filter = f),
+                        onTap: () {
+                          if (_filter == f) return; // no-op if already selected
+                          setState(() => _filter = f);
+                          _fetchLeaderboard(filter: f);
+                        },
                         child: Container(
                           margin: const EdgeInsets.only(right: 8),
                           padding: const EdgeInsets.symmetric(
@@ -101,6 +190,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     },
                   ),
                 ).animate().fadeIn(delay: 200.ms),
+                // Show active filter hint
+                if (_filter != 'Global') ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _filterHint(),
+                    style: TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 11,
+                      color: AppColors.cosmicPurple,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -110,7 +211,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  // Top 3 podium
+                  // Only show podium if we have at least 3 entries
+                  if (top3.length >= 3)
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -118,9 +220,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       Expanded(
                         child: _PodiumCard(
                           rank: 2,
-                          name: top3[1]['name'] as String,
-                          stardust: top3[1]['stardust'] as int,
-                          emoji: top3[1]['emoji'] as String,
+                          name: top3[1]['name'] as String? ?? 'Unknown',
+                          stardust: (top3[1]['stardust'] as num?)?.toInt() ?? 0,
+                          emoji: _rankEmojis[1],
                           height: 120,
                           color: const Color(0xFFC0C0C0),
                         ),
@@ -130,9 +232,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       Expanded(
                         child: _PodiumCard(
                           rank: 1,
-                          name: top3[0]['name'] as String,
-                          stardust: top3[0]['stardust'] as int,
-                          emoji: top3[0]['emoji'] as String,
+                          name: top3[0]['name'] as String? ?? 'Unknown',
+                          stardust: (top3[0]['stardust'] as num?)?.toInt() ?? 0,
+                          emoji: _rankEmojis[0],
                           height: 160,
                           color: AppColors.stardustGold,
                         ),
@@ -142,9 +244,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       Expanded(
                         child: _PodiumCard(
                           rank: 3,
-                          name: top3[2]['name'] as String,
-                          stardust: top3[2]['stardust'] as int,
-                          emoji: top3[2]['emoji'] as String,
+                          name: top3[2]['name'] as String? ?? 'Unknown',
+                          stardust: (top3[2]['stardust'] as num?)?.toInt() ?? 0,
+                          emoji: _rankEmojis[2],
                           height: 100,
                           color: const Color(0xFFCD7F32),
                         ),
@@ -157,7 +259,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     final i = entry.key;
                     final r = entry.value;
                     final rank = i + 4;
+                    final emoji = _rankEmojis[rank < _rankEmojis.length ? rank : _rankEmojis.length - 1];
                     final isUser = r['name'] == widget.userData['name'];
+                    final stardust = (r['stardust'] as num?)?.toInt() ?? 0;
+                    final institution = r['collegeId'] as String? ?? r['institution'] as String? ?? '—';
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: GlassCard(
@@ -183,15 +288,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                 ),
                               ),
                             ),
-                            Text(r['emoji'] as String,
-                                style: const TextStyle(fontSize: 20)),
+                            Text(emoji, style: const TextStyle(fontSize: 20)),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    r['name'] as String,
+                                    r['name'] as String? ?? 'Unknown',
                                     style: TextStyle(
                                       fontFamily: 'Outfit',
                                       fontSize: 14,
@@ -202,7 +306,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                     ),
                                   ),
                                   Text(
-                                    r['institution'] as String,
+                                    institution,
                                     style: const TextStyle(
                                       fontFamily: 'Outfit',
                                       fontSize: 11,
@@ -213,7 +317,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                               ),
                             ),
                             Text(
-                              '✨ ${r['stardust']}',
+                              '✨ $stardust',
                               style: const TextStyle(
                                 fontFamily: 'Montserrat',
                                 fontSize: 13,

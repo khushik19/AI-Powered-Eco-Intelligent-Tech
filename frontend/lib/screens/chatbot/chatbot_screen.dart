@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../config/app_colors.dart';
 import '../../config/constants.dart';
+import '../../services/api_service.dart';
 import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
 
@@ -16,7 +18,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
+  final List<Map<String, String>> _history = []; // for API history
   bool _isTyping = false;
+  String? _errorMessage;
 
   void _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
@@ -24,19 +28,33 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     setState(() {
       _messages.add({'role': 'user', 'text': text});
       _isTyping = true;
+      _errorMessage = null;
     });
     _scrollToBottom();
 
-    // Call your backend chatbot API here
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() {
-      _isTyping = false;
-      _messages.add({
-        'role': 'bot',
-        'text':
-            'Great question! Composting is one of the most effective ways to reduce waste. Start by collecting organic kitchen waste — vegetable peels, fruit scraps, coffee grounds — in a bin. Layer it with dry leaves or paper to maintain balance. In 4–8 weeks you\'ll have rich compost for your plants! 🌱',
+    try {
+      // Add user turn to history before calling API
+      _history.add({'role': 'user', 'content': text});
+
+      final reply = await ApiService.instance.sendChatMessage(text, _history);
+
+      // Add assistant turn to history for next call
+      _history.add({'role': 'assistant', 'content': reply});
+
+      setState(() {
+        _isTyping = false;
+        _messages.add({'role': 'bot', 'text': reply});
       });
-    });
+    } catch (e) {
+      setState(() {
+        _isTyping = false;
+        _errorMessage = 'Could not reach EcoGPT. Is the backend running?';
+        _messages.add({
+          'role': 'bot',
+          'text': '⚠️ Connection error. Please make sure the backend is running at localhost:8000.',
+        });
+      });
+    }
     _scrollToBottom();
   }
 
@@ -265,7 +283,7 @@ class _MessageBubble extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+          maxWidth: MediaQuery.of(context).size.width * 0.80,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
@@ -283,15 +301,83 @@ class _MessageBubble extends StatelessWidget {
               ? null
               : Border.all(color: AppColors.glassBorder),
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontFamily: 'Outfit',
-            fontSize: 14,
-            color: isUser ? Colors.white : AppColors.textPrimary,
-            height: 1.5,
-          ),
-        ),
+        child: isUser
+            // User messages: plain text (they won't contain markdown)
+            ? Text(
+                text,
+                style: const TextStyle(
+                  fontFamily: 'Outfit',
+                  fontSize: 14,
+                  color: Colors.white,
+                  height: 1.5,
+                ),
+              )
+            // Bot messages: render markdown (bold, bullets, headings etc.)
+            : MarkdownBody(
+                data: text,
+                styleSheet: MarkdownStyleSheet(
+                  p: const TextStyle(
+                    fontFamily: 'Outfit',
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                    height: 1.5,
+                  ),
+                  strong: const TextStyle(
+                    fontFamily: 'Outfit',
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    height: 1.5,
+                  ),
+                  em: const TextStyle(
+                    fontFamily: 'Outfit',
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  listBullet: const TextStyle(
+                    fontFamily: 'Outfit',
+                    fontSize: 14,
+                    color: AppColors.nebulaBlue,
+                  ),
+                  h1: const TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                  h2: const TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                  h3: const TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.nebulaBlue,
+                  ),
+                  blockquote: const TextStyle(
+                    fontFamily: 'Outfit',
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  code: const TextStyle(
+                    fontFamily: 'Outfit',
+                    fontSize: 13,
+                    color: AppColors.cosmicGreen,
+                  ),
+                  blockquoteDecoration: BoxDecoration(
+                    color: AppColors.nebulaBlue.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(4),
+                    border: const Border(
+                      left: BorderSide(color: AppColors.nebulaBlue, width: 3),
+                    ),
+                  ),
+                ),
+              ),
       ),
     );
   }

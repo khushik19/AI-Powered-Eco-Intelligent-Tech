@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../config/app_colors.dart';
 import '../../config/constants.dart';
+import '../../services/api_service.dart';
 import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/loading_fact_widget.dart';
@@ -27,7 +30,7 @@ class AddRecordScreen extends StatefulWidget {
 class _AddRecordScreenState extends State<AddRecordScreen> {
   final _descController = TextEditingController();
   final _titleController = TextEditingController();
-  File? _mediaFile;
+  XFile? _mediaFile;
   String? _selectedActivity;
   String? _selectedCategory;
   bool _isLoading = false;
@@ -54,7 +57,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
         : await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       setState(() {
-        _mediaFile = File(picked.path);
+        _mediaFile = picked;
         _isVideo = video;
       });
     }
@@ -74,12 +77,39 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
       return;
     }
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
-    if (mounted) {
-      _showSnack('🌟 Activity recorded! +50 Stardust earned!', AppColors.cosmicGreen);
-      await Future.delayed(const Duration(seconds: 1));
-      Navigator.pop(context);
+
+    try {
+      // Encode image to base64
+      final bytes = await _mediaFile!.readAsBytes();
+      final imageBase64 = base64Encode(bytes);
+
+      final description = widget.isCustom
+          ? '${_titleController.text.trim()}: ${_descController.text.trim()}'
+          : '${_selectedActivity ?? ''}: ${_descController.text.trim()}';
+
+      final result = await ApiService.instance.submitAction(
+        userId: widget.userData['uid'] as String? ?? widget.userData['id'] as String? ?? '',
+        collegeId: widget.userData['collegeId'] as String? ?? '',
+        role: widget.userData['role'] as String? ?? 'student',
+        imageBase64: imageBase64,
+        description: description,
+        isPredefined: !widget.isCustom,
+      );
+
+      final stardust = result['stardustAwarded'] ?? 50;
+      final summary = result['impactSummary'] ?? 'Great eco action!';
+
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showSnack('🌟 Activity recorded! +$stardust Stardust earned! $summary', AppColors.cosmicGreen);
+        await Future.delayed(const Duration(seconds: 2));
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showSnack('⚠️ Submission failed: ${e.toString().replaceAll('Exception: ', '')}', AppColors.error);
+      }
     }
   }
 
@@ -234,12 +264,19 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                                                 size: 48),
                                           ),
                                         )
-                                      : Image.file(
-                                          _mediaFile!,
-                                          height: 200,
-                                          width: double.infinity,
-                                          fit: BoxFit.cover,
-                                        ),
+                                      : kIsWeb
+                                          ? Image.network(
+                                              _mediaFile!.path,
+                                              height: 200,
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Image.file(
+                                              File(_mediaFile!.path),
+                                              height: 200,
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                            ),
                                 ),
                                 Positioned(
                                   top: 8,
