@@ -4,9 +4,11 @@ import '../../config/app_colors.dart';
 import '../../config/constants.dart';
 import '../../services/api_service.dart';
 import '../../widgets/cosmic_background.dart';
+und.dart';
 import '../../widgets/glass_card.dart';
 import 'add_record_screen.dart';
 import 'all_records_screen.dart';
+import 'impact_report_screen.dart';
 
 class RecordsScreen extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -19,6 +21,10 @@ class RecordsScreen extends StatefulWidget {
 class _RecordsScreenState extends State<RecordsScreen> {
   List<Map<String, dynamic>> _recent = [];
   bool _isLoading = true;
+
+  // Impact report data (loaded in background)
+  Map<String, dynamic>? _impactReport;
+  bool _reportLoading = false;
 
   // Maps actionType → emoji
   static const _actionEmoji = {
@@ -39,6 +45,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
   void initState() {
     super.initState();
     _loadRecentActivity();
+    _loadImpactReport();
   }
 
   Future<void> _loadRecentActivity() async {
@@ -59,6 +66,18 @@ class _RecordsScreenState extends State<RecordsScreen> {
     } catch (_) {
       // Silent fail — just hide the recent section if offline
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadImpactReport() async {
+    final uid = widget.userData['uid'] as String? ?? '';
+    if (uid.isEmpty) return;
+    setState(() => _reportLoading = true);
+    try {
+      final data = await ApiService.instance.getImpactReport(uid);
+      if (mounted) setState(() { _impactReport = data; _reportLoading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _reportLoading = false);
     }
   }
 
@@ -229,6 +248,90 @@ class _RecordsScreenState extends State<RecordsScreen> {
                       );
                     }),
 
+                  const SizedBox(height: 24),
+
+                  // ── IMPACT REPORT BUTTON ──────────────────────────────────
+                  GlassCard(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ImpactReportScreen(
+                          entityId: widget.userData['uid'] as String? ?? '',
+                          isCollege: widget.userData['role'] == 'college_org',
+                        ),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(18),
+                    borderColor: AppColors.cosmicGreen.withValues(alpha: 0.3),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.cosmicGreen.withValues(alpha: 0.08),
+                        AppColors.nebulaBlue.withValues(alpha: 0.05),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            gradient: const LinearGradient(
+                              colors: [AppColors.cosmicGreen, AppColors.nebulaBlue],
+                            ),
+                          ),
+                          child: const Center(
+                            child: Text('📊', style: TextStyle(fontSize: 22)),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'View Impact Report',
+                                style: TextStyle(
+                                  fontFamily: 'Montserrat',
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                'Charts, insights & blind spots',
+                                style: TextStyle(
+                                  fontFamily: 'Outfit',
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios,
+                            color: AppColors.cosmicGreen, size: 16),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 350.ms).slideX(begin: 0.05, end: 0),
+                  const SizedBox(height: 16),
+
+                  // ── INLINE MINI CO₂ CHART ──────────────────────────────────
+                  if (_impactReport != null) ...[
+                    _buildMiniChart(),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // ── BLIND SPOTS PREVIEW ────────────────────────────────────
+                  if (_impactReport != null &&
+                      (_impactReport!['blindSpots'] as List<dynamic>? ?? []).isNotEmpty)
+                    _buildBlindSpotPreview(
+                      (_impactReport!['blindSpots'] as List<dynamic>).first
+                          as Map<String, dynamic>,
+                    ),
+
                   const SizedBox(height: 28),
 
                   // ── ADD NEW RECORD ────────────────────────────────────────
@@ -341,6 +444,151 @@ class _RecordsScreenState extends State<RecordsScreen> {
         ],
       ),
     );
+  }
+
+  // ── Mini CO₂ bar chart (last 4 weeks) ──────────────────────────────────
+  Widget _buildMiniChart() {
+    final weekly = (_impactReport!['weekly'] as List<dynamic>? ?? [])
+        .cast<Map<String, dynamic>>();
+    if (weekly.isEmpty) return const SizedBox.shrink();
+
+    final display = weekly.length > 4 ? weekly.sublist(weekly.length - 4) : weekly;
+    final maxCo2 = display
+        .map((d) => (d['co2Kg'] as num? ?? 0).toDouble())
+        .fold<double>(0, max);
+    final yMax = maxCo2 == 0 ? 10.0 : maxCo2 * 1.3;
+
+    return GlassCard(
+      padding: const EdgeInsets.fromLTRB(8, 16, 12, 8),
+      borderColor: AppColors.cosmicGreen.withValues(alpha: 0.2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 8, bottom: 8),
+            child: Row(
+              children: [
+                const Text('🌿', style: TextStyle(fontSize: 14)),
+                const SizedBox(width: 6),
+                Text(
+                  'CO₂ Saved (Last ${display.length} weeks)',
+                  style: const TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 100,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: yMax,
+                barTouchData: BarTouchData(enabled: false),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        final idx = value.toInt();
+                        if (idx < 0 || idx >= display.length) {
+                          return const SizedBox.shrink();
+                        }
+                        final label = display[idx]['label'] as String? ?? '';
+                        final short =
+                            label.length > 6 ? label.substring(0, 6) : label;
+                        return SideTitleWidget(
+                          axisSide: meta.axisSide,
+                          child: Text(
+                            short,
+                            style: const TextStyle(
+                              fontFamily: 'Outfit',
+                              fontSize: 8,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        );
+                      },
+                      reservedSize: 22,
+                    ),
+                  ),
+                  leftTitles:
+                      const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles:
+                      const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles:
+                      const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                borderData: FlBorderData(show: false),
+                gridData: const FlGridData(show: false),
+                barGroups: display.asMap().entries.map((e) {
+                  return BarChartGroupData(
+                    x: e.key,
+                    barRods: [
+                      BarChartRodData(
+                        toY: (e.value['co2Kg'] as num? ?? 0).toDouble(),
+                        color: AppColors.cosmicGreen,
+                        width: 16,
+                        borderRadius:
+                            const BorderRadius.vertical(top: Radius.circular(6)),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 400.ms);
+  }
+
+  // ── Blind spot preview card ────────────────────────────────────────────
+  Widget _buildBlindSpotPreview(Map<String, dynamic> spot) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: GlassCard(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ImpactReportScreen(
+              entityId: widget.userData['uid'] as String? ?? '',
+            ),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        borderColor: AppColors.warning.withValues(alpha: 0.25),
+        child: Row(
+          children: [
+            const Text('⚠️', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '${spot['icon'] ?? ''} ${spot['title'] ?? 'Blind spot'} not explored yet',
+                style: const TextStyle(
+                  fontFamily: 'Outfit',
+                  fontSize: 12,
+                  color: AppColors.warning,
+                ),
+              ),
+            ),
+            Text(
+              'See report →',
+              style: TextStyle(
+                fontFamily: 'Outfit',
+                fontSize: 11,
+                color: AppColors.nebulaBlue,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(delay: 450.ms);
   }
 }
 
