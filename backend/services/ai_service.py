@@ -184,17 +184,52 @@ def get_recommendations(data: dict) -> list:
         ]
 
 
+def _call_openrouter_chat(messages: list, model: str, api_key: str) -> str | None:
+    """
+    Makes a single OpenRouter chat request.
+    Returns the reply string on success, None on any failure.
+    Logs full error body so Render dashboard shows exactly what went wrong.
+    """
+    payload = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": 1024,
+    }
+    try:
+        res = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://cleancosmos.web.app",
+                "X-Title": "Clean Cosmos",
+            },
+            json=payload,
+            timeout=30,
+        )
+        if res.ok:
+            reply = res.json()["choices"][0]["message"]["content"].strip()
+            print(f"[AI Chat] OK model={model} reply_len={len(reply)}")
+            return reply
+        else:
+            print(f"[AI Chat] {model} → HTTP {res.status_code}: {res.text[:400]}")
+            return None
+    except Exception as e:
+        print(f"[AI Chat] {model} → exception: {e}")
+        return None
+
+
 def chat_with_openrouter(query: str, history: list = []) -> str:
     """
     Eco-chatbot (Nebula) that handles user queries about sustainability.
     Called from an async FastAPI route via asyncio.to_thread — do NOT make async.
+    Tries preferred model first, falls back to guaranteed-free models on failure.
     """
-    model = _get_model()
     api_key = os.getenv("OPENROUTER_API_KEY", "")
 
     if not api_key or not api_key.strip():
         print("[AI] WARNING: OPENROUTER_API_KEY not set — chatbot unavailable.")
-        return "I'm sorry, I'm not configured yet. Please contact the app administrator."
+        return "I'm not configured yet. Please set OPENROUTER_API_KEY in the Render environment."
 
     system_prompt = (
         "You are Nebula, a friendly and knowledgeable sustainability expert for the Clean Cosmos app. "
@@ -213,26 +248,31 @@ def chat_with_openrouter(query: str, history: list = []) -> str:
 
     messages.append({"role": "user", "content": query})
 
-    print(f"[AI Chat] model={model} history_len={len(messages)-2}")
-    try:
-        payload = {
-            "model": model,
-            "messages": messages,
-            "max_tokens": 1024,
-        }
-        res = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=_get_headers(),
-            json=payload,
-            timeout=30
-        )
-        if not res.ok:
-            print(f"[AI Error] Chat HTTP {res.status_code}: {res.text[:500]}")
-            res.raise_for_status()
+    # Model fallback chain: preferred → proven free alternatives
+    preferred = _get_model()
+    fallback_models = [
+        "google/gemma-3-27b-it:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+    ]
 
-        reply = res.json()["choices"][0]["message"]["content"].strip()
-        print(f"[AI Chat] OK — reply_length={len(reply)}")
+    # Try preferred model first
+    print(f"[AI Chat] Trying preferred model: {preferred}")
+    reply = _call_openrouter_chat(messages, preferred, api_key)
+    if reply:
         return reply
-    except Exception as e:
-        print(f"[AI Error] Chat failed: {e}")
-        return "I'm sorry, I'm having trouble connecting to my eco-brain right now. Please try again in a moment!"
+
+    # If preferred fails, try fallbacks
+    for fb_model in fallback_models:
+        if fb_model == preferred:
+            continue  # skip if already tried
+        print(f"[AI Chat] Preferred failed — trying fallback: {fb_model}")
+        reply = _call_openrouter_chat(messages, fb_model, api_key)
+        if reply:
+            return reply
+
+    print("[AI Chat] All models failed — returning user-friendly error")
+    return (
+        "I'm having trouble connecting to my eco-brain right now. "
+        "This usually means the AI service is temporarily unavailable. "
+        "Please try again in a moment!"
+    )
