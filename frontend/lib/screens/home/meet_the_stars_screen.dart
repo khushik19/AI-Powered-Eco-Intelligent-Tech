@@ -11,22 +11,22 @@ class MeetTheStarsScreen extends StatelessWidget {
     {
       'name': 'Khushi Katiyar',
       'role': 'Fits the Flutters',
-      'emoji': '📱',
-      'color': AppColors.cosmicGreen,
+      'photo': 'assets/images/team_khushi.jpg',   // add your photo here
+      'color': AppColors.oliveGreen,
       'bio': 'Crafting every pixel of your cosmic journey.',
     },
     {
       'name': 'Vanshvi Jain',
       'role': "Backend's Back",
-      'emoji': '⚙️',
-      'color': AppColors.nebulaBlue,
+      'photo': 'assets/images/team_vanshvi.jpg',
+      'color': AppColors.tealBlue,
       'bio': 'The engine that powers the cosmos.',
     },
     {
       'name': 'Achal Goyal',
       'role': 'Fires the Base',
-      'emoji': '🔥',
-      'color': AppColors.cosmicPurple,
+      'photo': 'assets/images/team_achal.jpg',
+      'color': AppColors.dustyRose,
       'bio': 'Keeping the data alive across the universe.',
     },
   ];
@@ -55,10 +55,10 @@ class MeetTheStarsScreen extends StatelessWidget {
                   children: [
                     ShaderMask(
                       shaderCallback: (b) => const LinearGradient(
-                        colors: [AppColors.stardustGold, AppColors.cosmicPurple],
+                        colors: [AppColors.cream, AppColors.oliveGreen],
                       ).createShader(b),
                       child: const Text(
-                        'Meet the\nStars ✨',
+                        'Meet the\nStars',
                         style: TextStyle(
                           fontFamily: 'Montserrat',
                           fontSize: 36,
@@ -88,6 +88,7 @@ class MeetTheStarsScreen extends StatelessWidget {
                   itemBuilder: (context, i) {
                     final member = _team[i];
                     final color = member['color'] as Color;
+                    final photoPath = member['photo'] as String;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 20),
                       child: GlassCard(
@@ -103,31 +104,56 @@ class MeetTheStarsScreen extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            // Avatar circle
-                            Container(
-                              width: 72,
-                              height: 72,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    color.withOpacity(0.4),
-                                    color.withOpacity(0.1),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
+                            // Photo avatar with star badge
+                            Stack(
+                              children: [
+                                Container(
+                                  width: 72,
+                                  height: 72,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: color.withOpacity(0.6),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: ClipOval(
+                                    child: Image.asset(
+                                      photoPath,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) =>
+                                          Container(
+                                        color: color.withOpacity(0.15),
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.star,
+                                            color: color,
+                                            size: 32,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                border: Border.all(
-                                  color: color.withOpacity(0.5),
-                                  width: 2,
+                                // Star badge
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: color,
+                                    ),
+                                    child: const Icon(
+                                      Icons.star,
+                                      color: Colors.white,
+                                      size: 12,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  member['emoji'] as String,
-                                  style: const TextStyle(fontSize: 30),
-                                ),
-                              ),
+                              ],
                             ),
                             const SizedBox(width: 20),
                             Expanded(
@@ -179,7 +205,9 @@ class MeetTheStarsScreen extends StatelessWidget {
                         ),
                       )
                           .animate()
-                          .fadeIn(delay: Duration(milliseconds: 200 + i * 150))
+                          .fadeIn(
+                              delay:
+                                  Duration(milliseconds: 200 + i * 150))
                           .slideX(begin: 0.1, end: 0),
                     );
                   },
