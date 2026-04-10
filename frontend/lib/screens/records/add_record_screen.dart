@@ -445,8 +445,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                       _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : ElevatedButton(
-                              text: 'Submit for Verification',
-                              onTap: _submit,
+                              onPressed: _submit,
+                              child: const Text('Submit for Verification'),
                             ).animate().fadeIn(delay: 600.ms),
                       const SizedBox(height: 40),
                     ],

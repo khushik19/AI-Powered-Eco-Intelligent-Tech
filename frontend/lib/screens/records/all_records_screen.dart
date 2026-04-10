@@ -17,19 +17,19 @@ class _AllRecordsScreenState extends State<AllRecordsScreen> {
   bool _isLoading = true;
   String? _error;
 
-  // Maps actionType → emoji
-  static const _actionEmoji = {
-    'solar': '☀️',
-    'composting': '🌿',
-    'recycling': '♻️',
-    'eWaste': '🔌',
-    'water': '💧',
-    'energy': '💡',
-    'transport': '🚲',
-    'cutsWaste': '🗑️',
-    'optimizesResources': '⚡',
-    'lowersEmissions': '🌱',
-    'other': '🌍',
+  // Maps actionType → icon
+  static const _actionIcons = {
+    'solar': Icons.wb_sunny_outlined,
+    'composting': Icons.compost,
+    'recycling': Icons.recycling,
+    'eWaste': Icons.devices_outlined,
+    'water': Icons.water_drop_outlined,
+    'energy': Icons.bolt_outlined,
+    'transport': Icons.directions_bike_outlined,
+    'cutsWaste': Icons.delete_outline,
+    'optimizesResources': Icons.water_outlined,
+    'lowersEmissions': Icons.eco,
+    'other': Icons.star_outline,
   };
 
   @override
@@ -39,17 +39,42 @@ class _AllRecordsScreenState extends State<AllRecordsScreen> {
   }
 
   Future<void> _loadRecords() async {
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
-      final dash = await ApiService.instance.getStudentDashboard(widget.userId);
-      final submissions = (dash['submissions'] as List<dynamic>? ?? [])
-          .cast<Map<String, dynamic>>();
-      setState(() { _records = submissions; _isLoading = false; });
-    } catch (e) {
+      final dash =
+          await ApiService.instance.getStudentDashboard(widget.userId);
+      final submissions =
+          (dash['submissions'] as List<dynamic>? ?? [])
+              .cast<Map<String, dynamic>>();
       setState(() {
-        _error = 'Could not load your records.\nCheck that the backend is running.';
+        _records = submissions;
         _isLoading = false;
       });
+    } catch (e) {
+      setState(() {
+        _error =
+            'Could not load your records.\nCheck that the backend is running.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Color _colorForAction(String type) {
+    switch (type) {
+      case 'recycling':
+      case 'cutsWaste':
+      case 'composting':
+        return AppColors.cosmicGreen;
+      case 'water':
+      case 'optimizesResources':
+      case 'energy':
+      case 'solar':
+        return AppColors.bioTeal;
+      default:
+        return AppColors.cosmicPurple;
     }
   }
 
@@ -82,7 +107,8 @@ class _AllRecordsScreenState extends State<AllRecordsScreen> {
                     const Spacer(),
                     if (!_isLoading)
                       IconButton(
-                        icon: const Icon(Icons.refresh, color: AppColors.nebulaBlue),
+                        icon: const Icon(Icons.refresh,
+                            color: AppColors.bioTeal),
                         onPressed: _loadRecords,
                       ),
                   ],
@@ -91,34 +117,41 @@ class _AllRecordsScreenState extends State<AllRecordsScreen> {
               Expanded(
                 child: _isLoading
                     ? const Center(
-                        child: CircularProgressIndicator(color: AppColors.nebulaBlue),
+                        child: CircularProgressIndicator(
+                            color: AppColors.bioTeal),
                       )
                     : _error != null
                         ? Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text('⚠️', style: TextStyle(fontSize: 40)),
+                                const Icon(Icons.warning_amber_outlined,
+                                    color: AppColors.textMuted, size: 48),
                                 const SizedBox(height: 12),
-                                Text(_error!,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                        fontFamily: 'Outfit',
-                                        color: AppColors.textSecondary)),
+                                Text(
+                                  _error!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontFamily: 'Outfit',
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
                                 const SizedBox(height: 16),
-                                ElevatedButton(text: 'Retry', onTap: _loadRecords),
+                                AppButton(
+                                    text: 'Retry', onTap: _loadRecords),
                               ],
                             ),
                           )
                         : _records.isEmpty
                             ? const Center(
                                 child: Text(
-                                  'No activities yet!\nStart making an impact 🌱',
+                                  'No activities yet!\nStart making an impact.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                      fontFamily: 'Outfit',
-                                      color: AppColors.textSecondary,
-                                      fontSize: 16),
+                                    fontFamily: 'Outfit',
+                                    color: AppColors.textSecondary,
+                                    fontSize: 16,
+                                  ),
                                 ),
                               )
                             : ListView.builder(
@@ -128,8 +161,8 @@ class _AllRecordsScreenState extends State<AllRecordsScreen> {
                                   final r = _records[i];
                                   final actionType =
                                       r['actionType'] as String? ?? 'other';
-                                  final emoji =
-                                      _actionEmoji[actionType] ?? '🌍';
+                                  final icon = _actionIcons[actionType] ??
+                                      Icons.star_outline;
                                   final stardust =
                                       (r['stardustAwarded'] as num?)
                                           ?.toInt() ??
@@ -138,19 +171,28 @@ class _AllRecordsScreenState extends State<AllRecordsScreen> {
                                       (r['createdAt'] as String? ?? '')
                                           .split('T')
                                           .first;
-                                  final color = _colorForAction(actionType);
+                                  final color =
+                                      _colorForAction(actionType);
 
                                   return Padding(
                                     padding:
                                         const EdgeInsets.only(bottom: 12),
                                     child: LiquidGlassCard(
                                       padding: const EdgeInsets.all(16),
-                                      borderColor: color.withOpacity(0.2),
+                                      borderColor:
+                                          color.withOpacity(0.2),
                                       child: Row(
                                         children: [
-                                          Text(emoji,
-                                              style: const TextStyle(
-                                                  fontSize: 24)),
+                                          Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: color.withOpacity(0.15),
+                                            ),
+                                            child: Icon(icon,
+                                                color: color, size: 20),
+                                          ),
                                           const SizedBox(width: 14),
                                           Expanded(
                                             child: Column(
@@ -164,20 +206,21 @@ class _AllRecordsScreenState extends State<AllRecordsScreen> {
                                                   overflow:
                                                       TextOverflow.ellipsis,
                                                   style: const TextStyle(
-                                                      fontFamily: 'Outfit',
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color: AppColors
-                                                          .textPrimary),
+                                                    fontFamily: 'Outfit',
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        AppColors.textPrimary,
+                                                  ),
                                                 ),
                                                 Text(
-                                                  '$actionType · $date',
+                                                  '$actionType  $date',
                                                   style: const TextStyle(
-                                                      fontFamily: 'Outfit',
-                                                      fontSize: 11,
-                                                      color: AppColors
-                                                          .textSecondary),
+                                                    fontFamily: 'Outfit',
+                                                    fontSize: 11,
+                                                    color: AppColors
+                                                        .textSecondary,
+                                                  ),
                                                 ),
                                                 if ((r['impactSummary']
                                                         as String?) !=
@@ -198,22 +241,35 @@ class _AllRecordsScreenState extends State<AllRecordsScreen> {
                                             ),
                                           ),
                                           Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 10, vertical: 4),
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 4),
                                             decoration: BoxDecoration(
                                               borderRadius:
                                                   BorderRadius.circular(20),
                                               color: AppColors.stardustGold
                                                   .withOpacity(0.15),
                                             ),
-                                            child: Text(
-                                              '✨ +$stardust',
-                                              style: const TextStyle(
-                                                fontFamily: 'Montserrat',
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                color: AppColors.stardustGold,
-                                              ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.star,
+                                                    color:
+                                                        AppColors.stardustGold,
+                                                    size: 12),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  '+$stardust',
+                                                  style: const TextStyle(
+                                                    fontFamily: 'Montserrat',
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        AppColors.stardustGold,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ],
@@ -228,21 +284,5 @@ class _AllRecordsScreenState extends State<AllRecordsScreen> {
         ),
       ),
     );
-  }
-
-  Color _colorForAction(String type) {
-    switch (type) {
-      case 'recycling':
-      case 'cutsWaste':
-      case 'composting':
-        return AppColors.cosmicGreen;
-      case 'water':
-      case 'optimizesResources':
-      case 'energy':
-      case 'solar':
-        return AppColors.nebulaBlue;
-      default:
-        return AppColors.cosmicPurple;
-    }
   }
 }

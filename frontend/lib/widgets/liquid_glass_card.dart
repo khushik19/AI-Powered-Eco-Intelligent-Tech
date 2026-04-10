@@ -3,257 +3,184 @@ import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 
 /// iOS 26 / visionOS-style Liquid Glass card.
-/// Layered blur + refraction noise + specular rim + inner glow
-/// to achieve the "metallic liquid" look from image reference.
+/// Layered blur + specular rim + inner glow for the metallic liquid look.
 class LiquidGlassCard extends StatelessWidget {
   final Widget child;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-  final EdgeInsetsGeometry? padding;
-=======
-  final double borderRadius;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
-  final Color? tintColor;
+  final double borderRadius;
+  final Color? borderColor;
+  final Color? fillColor;
+  final Gradient? gradient;
   final VoidCallback? onTap;
   final double? width;
   final double? height;
   final double blurStrength;
->>>>>>> 9a1a991c4a0ff6488c71bc926a7e96f24c21bd19
-=======
-  final EdgeInsetsGeometry? padding;
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
-=======
-  final EdgeInsetsGeometry? padding;
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 
   const LiquidGlassCard({
     super.key,
     required this.child,
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-    this.padding,
-=======
-    this.borderRadius = 26,
     this.padding,
     this.margin,
-    this.tintColor,
+    this.borderRadius = 22,
+    this.borderColor,
+    this.fillColor,
+    this.gradient,
     this.onTap,
     this.width,
     this.height,
     this.blurStrength = 28,
->>>>>>> 9a1a991c4a0ff6488c71bc926a7e96f24c21bd19
-=======
-    this.padding,
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
-=======
-    this.padding,
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
   });
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
-    return Container(
-      padding: padding ?? const EdgeInsets.all(16),
+    final tint = borderColor ?? fillColor ?? AppColors.bioTeal;
+
+    Widget card = Container(
+      width: width,
+      height: height,
+      margin: margin,
       decoration: BoxDecoration(
-        color: AppColors.abyss,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.bioTeal.withOpacity(0.3),
-          width: 1,
-        ),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.abyss,
-            AppColors.backgroundSecondary,
-          ],
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -10,
-            right: -10,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.bioTeal.withOpacity(0.15),
-              ),
-            ),
+        borderRadius: BorderRadius.circular(borderRadius),
+        boxShadow: [
+          BoxShadow(
+            color: tint.withOpacity(0.15),
+            blurRadius: 32,
+            spreadRadius: -4,
+            offset: const Offset(0, 8),
           ),
-          child,
+          BoxShadow(
+            color: AppColors.neonMoss.withOpacity(0.06),
+            blurRadius: 60,
+            spreadRadius: -8,
+            offset: const Offset(0, 16),
+          ),
         ],
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-    final tint = tintColor ?? AppColors.electricCyan;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: width,
-        height: height,
-        margin: margin,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(borderRadius),
-          // Outer glow — the "liquid" halo
-          boxShadow: [
-            BoxShadow(
-              color: tint.withOpacity(0.18),
-              blurRadius: 32,
-              spreadRadius: -4,
-              offset: const Offset(0, 8),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Stack(
+          children: [
+            // Layer 1: Backdrop blur
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: blurStrength, sigmaY: blurStrength),
+              child: Container(color: Colors.transparent),
             ),
-            BoxShadow(
-              color: AppColors.neonMoss.withOpacity(0.08),
-              blurRadius: 60,
-              spreadRadius: -8,
-              offset: const Offset(0, 16),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: Stack(
-            children: [
-              // ── Layer 1: Heavy backdrop blur (frosted glass base) ──────────
-              BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: blurStrength,
-                  sigmaY: blurStrength,
-                ),
-                child: Container(color: Colors.transparent),
+            // Layer 2: Dark tinted fill
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(borderRadius),
+                gradient: gradient ??
+                    LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.midnightBlack.withOpacity(0.72),
+                        AppColors.midnightBlack.withOpacity(0.55),
+                        tint.withOpacity(0.06),
+                      ],
+                      stops: const [0.0, 0.65, 1.0],
+                    ),
               ),
-
-              // ── Layer 2: Dark tinted fill (midnight black base) ────────────
-              Container(
+            ),
+            // Layer 3: Specular top-left shine
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: borderRadius * 1.5,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(borderRadius),
+                  ),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      AppColors.midnightBlack.withOpacity(0.72),
-                      AppColors.midnightBlack.withOpacity(0.55),
-                      tint.withOpacity(0.06),
+                      Colors.white.withOpacity(0.26),
+                      Colors.white.withOpacity(0.05),
+                      Colors.transparent,
                     ],
-                    stops: const [0.0, 0.65, 1.0],
+                    stops: const [0.0, 0.4, 1.0],
                   ),
                 ),
               ),
-
-              // ── Layer 3: Specular top-left shine (the "glass" sheen) ───────
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: borderRadius * 1.5,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(borderRadius),
-                    ),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withOpacity(0.28),
-                        Colors.white.withOpacity(0.06),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 0.4, 1.0],
-                    ),
-                  ),
-                ),
-              ),
-
-              // ── Layer 4: Left-edge rim light (liquid glass side glow) ──────
-              Positioned(
-                top: 0,
-                left: 0,
-                bottom: 0,
-                child: Container(
-                  width: 1.5,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.horizontal(
-                      left: Radius.circular(borderRadius),
-                    ),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.white.withOpacity(0.45),
-                        Colors.white.withOpacity(0.05),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 0.5, 1.0],
-                    ),
-                  ),
-                ),
-              ),
-
-              // ── Layer 5: Outer border (glass edge) ────────────────────────
-              Container(
+            ),
+            // Layer 4: Left edge rim light
+            Positioned(
+              top: 0,
+              left: 0,
+              bottom: 0,
+              child: Container(
+                width: 1.5,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(borderRadius),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.14),
-                    width: 1.2,
+                  borderRadius: BorderRadius.horizontal(
+                    left: Radius.circular(borderRadius),
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withOpacity(0.42),
+                      Colors.white.withOpacity(0.05),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
                   ),
                 ),
               ),
-
-              // ── Layer 6: Bottom depth shadow (inner depth illusion) ────────
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: borderRadius * 1.2,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(borderRadius),
-                    ),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.22),
-                      ],
-                    ),
+            ),
+            // Layer 5: Outer border
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(borderRadius),
+                border: Border.all(
+                  color: borderColor ?? Colors.white.withOpacity(0.13),
+                  width: 1.0,
+                ),
+              ),
+            ),
+            // Layer 6: Bottom depth shadow
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: borderRadius * 1.2,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(borderRadius),
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.20),
+                    ],
                   ),
                 ),
               ),
-
-              // ── Content ───────────────────────────────────────────────────
-              Container(
-                padding: padding ?? const EdgeInsets.all(20),
-                child: child,
-              ),
-            ],
-          ),
+            ),
+            // Content
+            Container(
+              padding: padding ?? const EdgeInsets.all(20),
+              child: child,
+            ),
+          ],
         ),
->>>>>>> 9a1a991c4a0ff6488c71bc926a7e96f24c21bd19
-=======
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
-=======
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
       ),
     );
+
+    if (onTap != null) {
+      return GestureDetector(onTap: onTap, child: card);
+    }
+    return card;
   }
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
 
-/// Liquid Glass Button — pill-shaped with neon glow press effect
+/// Liquid Glass Button — pill-shaped with neon glow press effect.
 class LiquidGlassButton extends StatefulWidget {
   final String text;
   final VoidCallback onTap;
@@ -301,7 +228,7 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton>
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.color ?? AppColors.electricCyan;
+    final color = widget.color ?? AppColors.bioTeal;
     final labelColor = widget.isOutline ? color : AppColors.midnightBlack;
 
     return GestureDetector(
@@ -333,12 +260,10 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton>
             borderRadius: BorderRadius.circular(18),
             child: Stack(
               children: [
-                // Blur base
                 BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                   child: Container(color: Colors.transparent),
                 ),
-                // Gradient fill
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
@@ -365,7 +290,6 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton>
                     ),
                   ),
                 ),
-                // Specular top highlight
                 Positioned(
                   top: 0,
                   left: 0,
@@ -377,14 +301,13 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton>
                           top: Radius.circular(18)),
                       gradient: LinearGradient(
                         colors: [
-                          Colors.white.withOpacity(0.30),
+                          Colors.white.withOpacity(0.28),
                           Colors.transparent,
                         ],
                       ),
                     ),
                   ),
                 ),
-                // Label
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -414,7 +337,3 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton>
     );
   }
 }
-=======
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
-=======
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd

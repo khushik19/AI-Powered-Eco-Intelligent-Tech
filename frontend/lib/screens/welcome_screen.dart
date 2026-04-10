@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
+import '../widgets/cosmic_background.dart';
 import '../widgets/glass_card.dart';
 import 'auth/login_screen.dart';
 import 'auth/register_type_screen.dart';
@@ -39,169 +40,157 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
-      backgroundColor: AppColors.abyss,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnim,
-=======
+      backgroundColor: Colors.transparent,
       body: CosmicBackground(
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnim,
-<<<<<<< HEAD
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
-=======
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Spacer(flex: 2),
-                // App icon / hero
-                Center(
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.neonMoss,
-                          AppColors.electricCyan,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.neonMoss.withOpacity(0.4),
-                          blurRadius: 30,
-                          spreadRadius: 5,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Spacer(flex: 2),
+                  // App icon / hero
+                  Center(
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [AppColors.bioTeal, AppColors.kelp],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.bioTeal.withOpacity(0.4),
+                            blurRadius: 30,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.eco,
+                              color: Colors.black,
+                              size: 52),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Clean Cosmos',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Montserrat',
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [AppColors.softGrey, AppColors.bioTeal],
+                    ).createShader(bounds),
+                    child: const Text(
+                      'Your AI-powered eco intelligence companion.\nJoin the movement for a cleaner planet.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontFamily: 'Outfit',
+                        height: 1.6,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  // Features teaser
+                  GlassCard(
+                    child: Column(
+                      children: [
+                        _buildFeatureRow(
+                            Icons.eco, 'Log Eco-Actions', AppColors.bioTeal),
+                        const Divider(color: Colors.white10),
+                        _buildFeatureRow(Icons.bar_chart,
+                            'Impact Reports and Scores', AppColors.cosmicGreen),
+                        const Divider(color: Colors.white10),
+                        _buildFeatureRow(Icons.leaderboard_outlined,
+                            'Leaderboard and Challenges', AppColors.seaFoam),
+                        const Divider(color: Colors.white10),
+                        _buildFeatureRow(Icons.auto_awesome,
+                            'Nebula AI Assistant', AppColors.stardustGold),
                       ],
                     ),
-                    child: const Icon(Icons.eco, color: Colors.black, size: 52),
                   ),
-                ),
-                const SizedBox(height: 32),
-                // Title
-                Text(
-                  'CleanCosmos',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Subtitle with gradient shimmer effect
-                ShaderMask(
-                  shaderCallback: (bounds) => LinearGradient(
-                    colors: [AppColors.softGrey, AppColors.neonMoss],
-                  ).createShader(bounds),
-                  child: Text(
-                    'Your AI-powered eco intelligence companion.\nJoin the movement for a cleaner planet.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      height: 1.6,
+                  const Spacer(flex: 3),
+                  // Primary CTA — Register
+                  SizedBox(
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const RegisterTypeScreen()),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.bioTeal,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 8,
+                        shadowColor: AppColors.bioTeal.withOpacity(0.5),
+                      ),
+                      child: const Text(
+                        'Enter the Cosmos',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Montserrat',
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 40),
-                // Features teaser
-                GlassCard(
-                  child: Column(
-                    children: [
-<<<<<<< HEAD
-<<<<<<< HEAD
-                      _buildFeatureRow(
-                          Icons.qr_code_scanner, 'AI Waste Scanner', AppColors.bioTeal),
-                      const Divider(color: Colors.white10),
-                      _buildFeatureRow(
-                          Icons.bar_chart, 'Eco Report & Score', AppColors.neonMoss),
-                      const Divider(color: Colors.white10),
-                      _buildFeatureRow(
-                          Icons.public, 'Community Challenges', AppColors.seaFoam),
-=======
-=======
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
-                      _buildFeatureRow(Icons.qr_code_scanner,
-                          'AI Waste Scanner', AppColors.bioTeal),
-                      const Divider(color: Colors.white10),
-                      _buildFeatureRow(Icons.bar_chart, 'Eco Report & Score',
-                          AppColors.neonMoss),
-                      const Divider(color: Colors.white10),
-                      _buildFeatureRow(Icons.public, 'Community Challenges',
-                          AppColors.seaFoam),
-<<<<<<< HEAD
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
-=======
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
-                    ],
-                  ),
-                ),
-                const Spacer(flex: 3),
-                // Primary CTA
-                ElevatedButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const RegisterTypeScreen()),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.neonMoss,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 8,
-                    shadowColor: AppColors.neonMoss.withOpacity(0.5),
-                  ),
-                  child: const Text(
-                    'Enter the Cosmos',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                  const SizedBox(height: 12),
+                  // Secondary CTA — Login
+                  SizedBox(
+                    height: 56,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.bioTeal,
+                        side: const BorderSide(
+                            color: AppColors.bioTeal, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        'Already a Star? Login',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Montserrat',
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                // Secondary CTA
-                ElevatedButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    foregroundColor: AppColors.neonMoss,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      side: BorderSide(color: AppColors.neonMoss, width: 1.5),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Already a Star? Login',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-              ],
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
-          ),
           ),
         ),
       ),
@@ -217,17 +206,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           const SizedBox(width: 12),
           Text(
             label,
-            style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
+            style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontFamily: 'Outfit'),
           ),
         ],
       ),
     );
   }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 }
-=======
-}
->>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
