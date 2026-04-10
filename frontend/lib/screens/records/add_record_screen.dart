@@ -79,7 +79,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Encode image to base64
+      // Read image bytes once — used for both Storage upload and AI analysis
       final bytes = await _mediaFile!.readAsBytes();
       final imageBase64 = base64Encode(bytes);
 
@@ -91,7 +91,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
         userId: widget.userData['uid'] as String? ?? widget.userData['id'] as String? ?? '',
         collegeId: widget.userData['collegeId'] as String? ?? '',
         role: widget.userData['role'] as String? ?? 'student',
-        imageBase64: imageBase64,
+        imageBytes: bytes,        // for Firebase Storage upload (client-side)
+        imageBase64: imageBase64, // for AI vision model (backend)
         description: description,
         isPredefined: !widget.isCustom,
       );
