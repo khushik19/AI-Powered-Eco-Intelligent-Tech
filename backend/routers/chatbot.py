@@ -4,7 +4,6 @@ from services.ai_service import chat_with_openrouter
 
 router = APIRouter()
 
-
 class ChatRequest(BaseModel):
     query: str
     history: list = []   
