@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 
+<<<<<<< Updated upstream
 // Re-export so screens importing glass_card.dart get LiquidGlassCard too
 export 'liquid_glass_card.dart' show LiquidGlassCard, LiquidGlassButton;
 
@@ -14,23 +15,37 @@ class GlassCard extends StatelessWidget {
   final Color? fillColor;
   final Gradient? gradient;
   final VoidCallback? onTap;
+=======
+class GlassCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final double borderRadius;
+>>>>>>> Stashed changes
 
   const GlassCard({
     super.key,
     required this.child,
     this.padding,
+<<<<<<< Updated upstream
     this.margin,
     this.borderRadius = 16.0,
     this.borderColor,
     this.fillColor,
     this.gradient,
     this.onTap,
+=======
+    this.borderRadius = 16.0,
+>>>>>>> Stashed changes
   });
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< Updated upstream
     final container = Container(
       margin: margin,
+=======
+    return Container(
+>>>>>>> Stashed changes
       padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: gradient == null ? (fillColor ?? AppColors.glassWhite) : null,
@@ -43,6 +58,7 @@ class GlassCard extends StatelessWidget {
       ),
       child: child,
     );
+<<<<<<< Updated upstream
 
     if (onTap != null) {
       return GestureDetector(onTap: onTap, child: container);
@@ -129,5 +145,7 @@ class AppButton extends StatelessWidget {
         child: label,
       ),
     );
+=======
+>>>>>>> Stashed changes
   }
 }
