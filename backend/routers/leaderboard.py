@@ -19,14 +19,33 @@ def _fetch_colleges(limit, city, state):
     return [{"id": c.id, **c.to_dict()} for c in query.limit(limit).stream()]
 
 
-def _fetch_individuals(limit, college_id):
-    """Blocking Firestore read — runs in thread pool."""
-    query = db.collection("users").where("role", "==", "student").order_by(
+def _fetch_individuals(limit, college_id, city, state):
+    """
+    Blocking Firestore read — runs in thread pool.
+    Fetches all users sorted by stardust, excluding college_org.
+    Note: We cannot filter by city/state AND order by stardust without a composite
+    index, so we filter in Python instead.
+    """
+    query = db.collection("users").order_by(
         "stardust", direction=firestore.Query.DESCENDING
     )
     if college_id:
         query = query.where("collegeId", "==", college_id)
-    return [{"id": u.id, **u.to_dict()} for u in query.limit(limit).stream()]
+
+    results = []
+    for u in query.limit(limit * 3).stream():  # fetch extra to account for filtered-out orgs
+        d = u.to_dict()
+        role = d.get("role", "")
+        if role in ("college_org", "college"):
+            continue
+        if city and d.get("city", "").lower() != city.lower():
+            continue
+        if state and d.get("state", "").lower() != state.lower():
+            continue
+        results.append({"id": u.id, **d})
+        if len(results) >= limit:
+            break
+    return results
 
 
 @router.get("/colleges")
@@ -40,5 +59,5 @@ async def individual_leaderboard(
     college_id: str = None, city: str = None,
     state: str = None, limit: int = 50
 ):
-    """Top individual students by stardust points."""
-    return await asyncio.to_thread(_fetch_individuals, limit, college_id)
+    """Top individual users by stardust points (excludes college orgs)."""
+    return await asyncio.to_thread(_fetch_individuals, limit, college_id, city, state)
