@@ -1,3 +1,18 @@
+"""
+dashboard.py — Impact Report, Charts, and Blind Spot Analysis
+
+All three features live here:
+  1. Impact Tracking Report   → narrativeReport (Markdown text, AI insights per activity)
+  2. Graphical Representation → chartSeries (parallel arrays per metric, ready for fl_chart)
+  3. Inaction Highlighting    → blindSpots (category scoring, suggestions, coverage %)
+
+Endpoints:
+  GET /dashboard/impact-report/{user_id}
+  GET /dashboard/impact-report/college/{college_id}
+  GET /dashboard/college/{college_id}   (existing college dashboard)
+  GET /dashboard/student/{user_id}      (existing student dashboard)
+"""
+
 from fastapi import APIRouter
 from firebase_admin import firestore
 from services.firebase_service import get_college_dashboard, get_student_dashboard
@@ -30,8 +45,8 @@ async def student_dash(user_id: str):
     return await asyncio.to_thread(get_student_dashboard, user_id)
 
 
-# ── Category mapping ─────────────────────────────────────────────────────────
-# Maps actionType values to the 3 main sustainability categories shown in the app
+# ── Category mapping ──────────────────────────────────────────────────────────
+# Maps fine-grained actionType → one of the 3 main sustainability pillars
 
 CATEGORY_MAP = {
     "recycling":          "cutsWaste",
@@ -46,174 +61,53 @@ CATEGORY_MAP = {
     "lowersEmissions":    "lowersEmissions",
 }
 
+EMOJI_MAP = {
+    "solar": "☀️", "composting": "🌿", "recycling": "♻️", "eWaste": "🔌",
+    "water": "💧", "energy": "💡", "transport": "🚲", "cutsWaste": "🗑️",
+    "optimizesResources": "⚡", "lowersEmissions": "🌱", "other": "🌍",
+}
+
 CATEGORY_META = {
     "cutsWaste": {
         "title": "Cut Waste",
         "icon": "♻️",
+        "pillar": "Reduces Waste",
         "message": "No waste-reduction activities logged yet — try recycling, composting, or e-waste disposal.",
         "suggestions": [
-            "Started composting at home",
-            "Reduced single-use plastic usage",
-            "Donated old electronics for recycling",
-            "Organized a waste collection drive",
+            "Start composting food scraps at home or campus",
+            "Reduce single-use plastic — carry a reusable bag/bottle",
+            "Donate or recycle old electronics instead of discarding them",
+            "Organize a waste collection or cleanup drive",
         ],
     },
     "optimizesResources": {
         "title": "Optimize Resources",
         "icon": "💧",
+        "pillar": "Optimizes Resource Usage",
         "message": "No resource-optimization activities logged yet — try saving water, energy, or installing solar.",
         "suggestions": [
-            "Installed water-saving fixtures",
-            "Fixed a leaking tap",
-            "Switched to LED lighting",
-            "Used natural light during day",
+            "Install water-saving fixtures or fix leaking taps",
+            "Switch to LED lighting across campus or home",
+            "Use natural light during daytime hours",
+            "Install solar panels or renewable energy sources",
         ],
     },
     "lowersEmissions": {
         "title": "Lower Emissions",
         "icon": "🌱",
+        "pillar": "Lowers Emissions",
         "message": "No emission-lowering activities logged yet — try cycling, public transport, or planting trees.",
         "suggestions": [
-            "Cycled to work or college",
-            "Used public transport",
-            "Planted a tree",
-            "Carpooled with friends",
+            "Cycle or walk to campus instead of using private vehicles",
+            "Use public transport or carpool with others",
+            "Plant trees or participate in a plantation drive",
+            "Reduce air-conditioner usage and switch to fans",
         ],
     },
 }
 
 
-# ── Helper: build impact report from a list of submission dicts ───────────────
-
-def _build_impact_report(submissions: list, entity_name: str = "You") -> dict:
-    """
-    Aggregates a list of submission dicts into weekly/monthly/yearly buckets,
-    computes blind spots, and generates a narrative text report.
-    Works for both individual users and colleges.
-    """
-    now = datetime.utcnow()
-
-    # ── Aggregate totals ─────────────────────────────────────────────────────
-    summary = {
-        "totalCo2Kg": 0,
-        "totalEnergyKwh": 0,
-        "totalWaterL": 0,
-        "totalEWasteKg": 0,
-        "totalStardust": 0,
-        "totalCostSavingRupees": 0,
-        "totalActions": len(submissions),
-    }
-    action_counts = defaultdict(int)
-    category_counts = {"cutsWaste": 0, "optimizesResources": 0, "lowersEmissions": 0}
-
-    # Buckets keyed by period label
-    weekly_buckets = defaultdict(lambda: _empty_bucket())
-    monthly_buckets = defaultdict(lambda: _empty_bucket())
-    yearly_buckets = defaultdict(lambda: _empty_bucket())
-
-    for s in submissions:
-        co2 = _num(s.get("co2ReducedKg", 0))
-        energy = _num(s.get("energySavedKwh", 0))
-        water = _num(s.get("waterSavedLiters", 0))
-        ewaste = _num(s.get("eWasteKg", 0))
-        stardust = _num(s.get("stardustAwarded", 0))
-        cost = _num(s.get("estimatedCostSavingRupees", 0))
-
-        summary["totalCo2Kg"] += co2
-        summary["totalEnergyKwh"] += energy
-        summary["totalWaterL"] += water
-        summary["totalEWasteKg"] += ewaste
-        summary["totalStardust"] += stardust
-        summary["totalCostSavingRupees"] += cost
-
-        action_type = s.get("actionType", "other")
-        action_counts[action_type] += 1
-
-        parent_cat = CATEGORY_MAP.get(action_type)
-        if parent_cat:
-            category_counts[parent_cat] += 1
-
-        # Parse date for bucketing
-        created = s.get("createdAt", "")
-        try:
-            dt = datetime.fromisoformat(created.replace("Z", "+00:00").split("+")[0])
-        except (ValueError, AttributeError):
-            dt = now
-
-        # Weekly bucket (ISO week)
-        iso_year, iso_week, _ = dt.isocalendar()
-        week_start = dt - timedelta(days=dt.weekday())
-        week_label = f"{week_start.strftime('%b %d')} – {(week_start + timedelta(days=6)).strftime('%b %d')}"
-        week_key = f"{iso_year}-W{iso_week:02d}"
-        _add_to_bucket(weekly_buckets[week_key], co2, energy, water, ewaste, stardust)
-        weekly_buckets[week_key]["label"] = week_label
-
-        # Monthly bucket
-        month_key = dt.strftime("%Y-%m")
-        month_label = dt.strftime("%B %Y")
-        _add_to_bucket(monthly_buckets[month_key], co2, energy, water, ewaste, stardust)
-        monthly_buckets[month_key]["label"] = month_label
-
-        # Yearly bucket
-        year_key = str(dt.year)
-        _add_to_bucket(yearly_buckets[year_key], co2, energy, water, ewaste, stardust)
-        yearly_buckets[year_key]["label"] = year_key
-
-    # Sort buckets by key (chronological)
-    weekly = [{"period": k, **v} for k, v in sorted(weekly_buckets.items())]
-    monthly = [{"period": k, **v} for k, v in sorted(monthly_buckets.items())]
-    yearly = [{"period": k, **v} for k, v in sorted(yearly_buckets.items())]
-
-    # ── Blind spots ──────────────────────────────────────────────────────────
-    blind_spots = []
-    for cat_id, count in category_counts.items():
-        if count == 0:
-            meta = CATEGORY_META[cat_id]
-            blind_spots.append({
-                "category": cat_id,
-                "title": meta["title"],
-                "icon": meta["icon"],
-                "message": meta["message"],
-                "suggestions": meta["suggestions"],
-                "actionCount": 0,
-            })
-
-    # ── Narrative report ─────────────────────────────────────────────────────
-    narrative = _generate_narrative(
-        entity_name, summary, action_counts, category_counts, blind_spots, weekly
-    )
-
-    # Round floats for clean JSON
-    summary["totalCo2Kg"] = round(summary["totalCo2Kg"], 2)
-    summary["totalEnergyKwh"] = round(summary["totalEnergyKwh"], 2)
-    summary["totalWaterL"] = round(summary["totalWaterL"], 2)
-    summary["totalEWasteKg"] = round(summary["totalEWasteKg"], 2)
-    summary["totalCostSavingRupees"] = round(summary["totalCostSavingRupees"], 2)
-
-    return {
-        "summary": summary,
-        "weekly": weekly,
-        "monthly": monthly,
-        "yearly": yearly,
-        "actionBreakdown": dict(action_counts),
-        "categoryBreakdown": category_counts,
-        "blindSpots": blind_spots,
-        "narrativeReport": narrative,
-    }
-
-
-def _empty_bucket() -> dict:
-    return {"co2Kg": 0, "energyKwh": 0, "waterL": 0, "eWasteKg": 0, "stardust": 0, "actions": 0, "label": ""}
-
-
-def _add_to_bucket(bucket, co2, energy, water, ewaste, stardust):
-    bucket["co2Kg"] += co2
-    bucket["energyKwh"] += energy
-    bucket["waterL"] += water
-    bucket["eWasteKg"] += ewaste
-    bucket["stardust"] += stardust
-    bucket["actions"] += 1
-
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _num(val) -> float:
     try:
@@ -222,120 +116,372 @@ def _num(val) -> float:
         return 0.0
 
 
-def _generate_narrative(name, summary, action_counts, category_counts, blind_spots, weekly) -> str:
-    """Build a human-readable narrative from aggregated data."""
-    parts = []
-    parts.append(f"## 🌍 Sustainability Impact Report")
-    parts.append("")
+def _empty_bucket() -> dict:
+    return {
+        "co2Kg": 0.0, "energyKwh": 0.0, "waterL": 0.0,
+        "eWasteKg": 0.0, "stardust": 0.0, "actions": 0, "label": "",
+    }
+
+
+def _add_to_bucket(bucket, co2, energy, water, ewaste, stardust):
+    bucket["co2Kg"]     += co2
+    bucket["energyKwh"] += energy
+    bucket["waterL"]    += water
+    bucket["eWasteKg"]  += ewaste
+    bucket["stardust"]  += stardust
+    bucket["actions"]   += 1
+
+
+def _parse_dt(created: str, fallback: datetime) -> datetime:
+    try:
+        return datetime.fromisoformat(created.replace("Z", "+00:00").split("+")[0])
+    except (ValueError, AttributeError):
+        return fallback
+
+
+# ── Core builder ──────────────────────────────────────────────────────────────
+
+def _build_impact_report(submissions: list, entity_name: str = "You") -> dict:
+    """
+    Feature 1 — Impact Tracking Report:
+      Aggregates all submission data into weekly/monthly/yearly buckets.
+      Includes AI-generated impact insights per activity in the narrative.
+
+    Feature 2 — Graphical Representation:
+      Returns chartSeries: parallel arrays (labels, co2, energy, water)
+      for weekly / monthly / yearly views — directly usable by fl_chart.
+
+    Feature 3 — Inaction Highlighting (Blind Spots):
+      Scores each of the 3 pillars as a % of total actions.
+      Flags categories with 0 actions as blind spots, low-count (<15%) as warnings.
+    """
+    now = datetime.utcnow()
+
+    # ── Aggregate totals ─────────────────────────────────────────────────────
+    summary = {
+        "totalCo2Kg": 0.0,
+        "totalEnergyKwh": 0.0,
+        "totalWaterL": 0.0,
+        "totalEWasteKg": 0.0,
+        "totalStardust": 0.0,
+        "totalCostSavingRupees": 0.0,
+        "totalActions": len(submissions),
+    }
+    action_counts = defaultdict(int)
+    category_counts = {"cutsWaste": 0, "optimizesResources": 0, "lowersEmissions": 0}
+
+    # Time-series buckets
+    weekly_buckets  = defaultdict(lambda: _empty_bucket())
+    monthly_buckets = defaultdict(lambda: _empty_bucket())
+    yearly_buckets  = defaultdict(lambda: _empty_bucket())
+
+    # Feature 1 extra: collect per-activity insight sentences (from AI)
+    activity_insights = []   # [{date, emoji, actionType, impactSummary, realWorldEquivalent, co2Kg}]
+
+    for s in submissions:
+        co2      = _num(s.get("co2ReducedKg", 0))
+        energy   = _num(s.get("energySavedKwh", 0))
+        water    = _num(s.get("waterSavedLiters", 0))
+        ewaste   = _num(s.get("eWasteKg", 0))
+        stardust = _num(s.get("stardustAwarded", 0))
+        cost     = _num(s.get("estimatedCostSavingRupees", 0))
+
+        summary["totalCo2Kg"]             += co2
+        summary["totalEnergyKwh"]         += energy
+        summary["totalWaterL"]            += water
+        summary["totalEWasteKg"]          += ewaste
+        summary["totalStardust"]          += stardust
+        summary["totalCostSavingRupees"]  += cost
+
+        action_type = s.get("actionType", "other")
+        action_counts[action_type] += 1
+        parent_cat = CATEGORY_MAP.get(action_type)
+        if parent_cat:
+            category_counts[parent_cat] += 1
+
+        # Collect insight sentence
+        impact_summary = s.get("impactSummary", "").strip()
+        real_world     = s.get("realWorldEquivalent", "").strip()
+        created_str    = s.get("createdAt", "")
+        date_label     = created_str[:10] if created_str else "Unknown date"
+
+        if impact_summary:
+            activity_insights.append({
+                "date":               date_label,
+                "actionType":         action_type,
+                "emoji":              EMOJI_MAP.get(action_type, "🌍"),
+                "impactSummary":      impact_summary,
+                "realWorldEquivalent": real_world or None,
+                "co2Kg":              round(co2, 2),
+                "energyKwh":          round(energy, 2),
+                "stardust":           int(stardust),
+            })
+
+        # Time buckets
+        dt = _parse_dt(created_str, now)
+
+        iso_year, iso_week, _ = dt.isocalendar()
+        week_start = dt - timedelta(days=dt.weekday())
+        week_label = f"{week_start.strftime('%b %d')} – {(week_start + timedelta(days=6)).strftime('%b %d')}"
+        week_key   = f"{iso_year}-W{iso_week:02d}"
+        _add_to_bucket(weekly_buckets[week_key], co2, energy, water, ewaste, stardust)
+        weekly_buckets[week_key]["label"] = week_label
+
+        month_key   = dt.strftime("%Y-%m")
+        month_label = dt.strftime("%B %Y")
+        _add_to_bucket(monthly_buckets[month_key], co2, energy, water, ewaste, stardust)
+        monthly_buckets[month_key]["label"] = month_label
+
+        year_key = str(dt.year)
+        _add_to_bucket(yearly_buckets[year_key], co2, energy, water, ewaste, stardust)
+        yearly_buckets[year_key]["label"] = year_key
+
+    # Sort buckets chronologically
+    weekly  = [{"period": k, **v} for k, v in sorted(weekly_buckets.items())]
+    monthly = [{"period": k, **v} for k, v in sorted(monthly_buckets.items())]
+    yearly  = [{"period": k, **v} for k, v in sorted(yearly_buckets.items())]
+
+    # Sort activity insights newest-first; keep top 20 for narrative
+    activity_insights.sort(key=lambda x: x["date"], reverse=True)
+
+    # ── Feature 2: Chart Series ───────────────────────────────────────────────
+    # Pre-built parallel arrays for fl_chart BarChart / LineChart.
+    # Flutter reads: chartSeries["weekly"]["labels"][i], chartSeries["weekly"]["co2"][i]
+    def _to_chart_series(buckets: list) -> dict:
+        return {
+            "labels":     [b["label"] or b["period"] for b in buckets],
+            "co2":        [round(b["co2Kg"], 2)     for b in buckets],
+            "energy":     [round(b["energyKwh"], 2) for b in buckets],
+            "water":      [round(b["waterL"], 1)    for b in buckets],
+            "eWaste":     [round(b["eWasteKg"], 2)  for b in buckets],
+            "stardust":   [round(b["stardust"], 0)  for b in buckets],
+            "actions":    [b["actions"]             for b in buckets],
+        }
+
+    chart_series = {
+        "weekly":  _to_chart_series(weekly),
+        "monthly": _to_chart_series(monthly),
+        "yearly":  _to_chart_series(yearly),
+    }
+
+    # ── Feature 3: Blind Spots / Inaction Highlighting ────────────────────────
+    total_actions = max(summary["totalActions"], 1)  # avoid division by zero
+    blind_spots = []
+    category_scores = {}  # coverage % per pillar
+
+    for cat_id, count in category_counts.items():
+        pct = round((count / total_actions) * 100, 1)
+        category_scores[cat_id] = {"count": count, "coveragePct": pct}
+        meta = CATEGORY_META[cat_id]
+
+        if count == 0:
+            severity = "blind"     # Never explored — hard red
+        elif pct < 15:
+            severity = "low"       # Very low engagement — amber warning
+        else:
+            severity = "ok"
+
+        if severity in ("blind", "low"):
+            blind_spots.append({
+                "category":    cat_id,
+                "pillar":      meta["pillar"],
+                "title":       meta["title"],
+                "icon":        meta["icon"],
+                "message":     meta["message"],
+                "suggestions": meta["suggestions"],
+                "actionCount": count,
+                "coveragePct": pct,
+                "severity":    severity,   # "blind" | "low"
+            })
+
+    # ── Feature 1: Narrative Report ───────────────────────────────────────────
+    narrative = _generate_narrative(
+        entity_name, summary, action_counts, category_counts,
+        blind_spots, weekly, activity_insights
+    )
+
+    # Round summary floats
+    for key in ("totalCo2Kg", "totalEnergyKwh", "totalWaterL", "totalEWasteKg", "totalCostSavingRupees"):
+        summary[key] = round(summary[key], 2)
+
+    return {
+        # Feature 1
+        "summary":          summary,
+        "narrativeReport":  narrative,
+        "activityInsights": activity_insights[:20],  # top 20 newest AI insights
+
+        # Feature 2
+        "weekly":           weekly,
+        "monthly":          monthly,
+        "yearly":           yearly,
+        "chartSeries":      chart_series,          # ← NEW: parallel arrays for fl_chart
+        "actionBreakdown":  dict(action_counts),
+        "categoryBreakdown": category_counts,
+
+        # Feature 3
+        "blindSpots":       blind_spots,
+        "categoryScores":   category_scores,       # ← NEW: coverage % per pillar
+    }
+
+
+# ── Narrative generator ───────────────────────────────────────────────────────
+
+def _generate_narrative(
+    name: str,
+    summary: dict,
+    action_counts: dict,
+    category_counts: dict,
+    blind_spots: list,
+    weekly: list,
+    activity_insights: list,
+) -> str:
+    """
+    Builds a rich Markdown narrative that:
+    - Opens with aggregate impact (numbers → relatable analogies)
+    - Lists individual AI-generated insight sentences (the specific "saved X by doing Y" lines)
+    - Highlights the current week
+    - Calls out blind spots with actionable suggestions
+    """
+    parts = ["## 🌍 Sustainability Impact Report", ""]
 
     total = summary["totalActions"]
     if total == 0:
-        parts.append(f"*{name} haven't logged any eco-actions yet. Start making an impact today!*")
+        parts.append(f"*{name} hasn't logged any eco-actions yet. Start making an impact today!*")
         return "\n".join(parts)
 
-    # Overall summary
-    parts.append(f"### Overall Impact")
-    parts.append(f"Across **{total} recorded actions**, here's what's been achieved:")
-    parts.append("")
+    # ── Section 1: Overall aggregate ──────────────────────────────────────────
+    parts += [f"### ✨ Overall Impact", f"Across **{total} recorded actions**, here's what's been achieved:", ""]
 
-    highlights = []
     if summary["totalCo2Kg"] > 0:
-        trees = round(summary["totalCo2Kg"] / 22, 1)  # ~22 kg CO₂ per tree per year
-        highlights.append(f"🌿 **{summary['totalCo2Kg']:.1f} kg of CO₂** reduced — equivalent to planting **{trees} trees**")
+        trees = round(summary["totalCo2Kg"] / 22, 1)
+        parts.append(f"🌿 **{summary['totalCo2Kg']:.1f} kg of CO₂** reduced — equivalent to planting **{trees} trees**")
     if summary["totalEnergyKwh"] > 0:
-        homes = round(summary["totalEnergyKwh"] / 900, 1)  # avg Indian home ~900 kWh/yr
-        highlights.append(f"⚡ **{summary['totalEnergyKwh']:.1f} kWh** of energy saved — enough to power **{homes} homes** for a year")
+        homes = round(summary["totalEnergyKwh"] / 900, 2)
+        parts.append(f"⚡ **{summary['totalEnergyKwh']:.1f} kWh** of energy saved — powers **{homes} Indian homes** for a year")
     if summary["totalWaterL"] > 0:
         bottles = int(summary["totalWaterL"] / 0.5)
-        highlights.append(f"💧 **{summary['totalWaterL']:.0f} liters** of water saved — that's **{bottles:,} bottles**")
+        parts.append(f"💧 **{summary['totalWaterL']:.0f} liters** of water saved — that's **{bottles:,} plastic bottles**")
     if summary["totalEWasteKg"] > 0:
-        highlights.append(f"🔌 **{summary['totalEWasteKg']:.1f} kg** of e-waste properly handled")
+        parts.append(f"🔌 **{summary['totalEWasteKg']:.1f} kg** of e-waste properly diverted from landfills")
     if summary["totalCostSavingRupees"] > 0:
-        highlights.append(f"💰 Estimated **₹{summary['totalCostSavingRupees']:,.0f}** saved")
+        parts.append(f"💰 Estimated **₹{summary['totalCostSavingRupees']:,.0f}** in cost savings")
     if summary["totalStardust"] > 0:
-        highlights.append(f"✨ **{int(summary['totalStardust'])} Stardust** earned")
-
-    parts.extend(highlights)
+        parts.append(f"✨ **{int(summary['totalStardust'])} Stardust** earned")
     parts.append("")
 
-    # Most active category
+    # ── Section 2: Top focus area ─────────────────────────────────────────────
     if action_counts:
         top_action = max(action_counts, key=action_counts.get)
-        emoji_map = {
-            "solar": "☀️", "composting": "🌿", "recycling": "♻️", "eWaste": "🔌",
-            "water": "💧", "energy": "💡", "transport": "🚲", "cutsWaste": "🗑️",
-            "optimizesResources": "⚡", "lowersEmissions": "🌱",
-        }
-        emoji = emoji_map.get(top_action, "🌍")
-        parts.append(f"### Top Focus Area")
-        parts.append(f"{emoji} Most frequent action: **{top_action}** ({action_counts[top_action]} times)")
+        emoji = EMOJI_MAP.get(top_action, "🌍")
+        parts += [
+            "### 🏆 Top Focus Area",
+            f"{emoji} Most frequent action: **{top_action}** ({action_counts[top_action]} times)",
+            "",
+        ]
+
+    # ── Section 3: Activity-level AI insights ─────────────────────────────────
+    # These are the specific sentences from the AI for each recorded activity
+    useful_insights = [i for i in activity_insights if i.get("impactSummary")]
+    if useful_insights:
+        parts += ["### 📋 Your Activity Insights", ""]
+        for insight in useful_insights[:10]:  # Show newest 10
+            emoji = insight.get("emoji", "🌍")
+            date  = insight.get("date", "")
+            text  = insight["impactSummary"]
+            rw    = insight.get("realWorldEquivalent", "")
+            line  = f"- {emoji} **{date}** — {text}"
+            if rw:
+                line += f" *(~{rw})*"
+            parts.append(line)
         parts.append("")
 
-    # Recent week highlight
+    # ── Section 4: This week ──────────────────────────────────────────────────
     if weekly:
-        last_week = weekly[-1]
-        if last_week["actions"] > 0:
-            parts.append(f"### This Week ({last_week['label']})")
-            parts.append(f"Logged **{last_week['actions']} actions** this week")
-            if last_week["co2Kg"] > 0:
-                parts.append(f"- Saved **{last_week['co2Kg']:.1f} kg CO₂**")
-            if last_week["energyKwh"] > 0:
-                parts.append(f"- Saved **{last_week['energyKwh']:.1f} kWh** energy")
-            if last_week["waterL"] > 0:
-                parts.append(f"- Saved **{last_week['waterL']:.0f}L** water")
+        last = weekly[-1]
+        if last["actions"] > 0:
+            parts += [f"### 📅 This Week ({last['label']})", f"Logged **{last['actions']} actions**"]
+            if last["co2Kg"] > 0:
+                parts.append(f"- Saved **{round(last['co2Kg'], 1)} kg CO₂**")
+            if last["energyKwh"] > 0:
+                parts.append(f"- Saved **{round(last['energyKwh'], 1)} kWh** of energy")
+            if last["waterL"] > 0:
+                parts.append(f"- Conserved **{int(last['waterL'])} liters** of water")
             parts.append("")
 
-    # Blind spots
+    # ── Section 5: Category coverage ─────────────────────────────────────────
+    parts += ["### 📊 Category Coverage", ""]
+    for cat_id, meta in CATEGORY_META.items():
+        count = category_counts.get(cat_id, 0)
+        total_safe = max(total, 1)
+        pct   = round((count / total_safe) * 100)
+        bar_filled = int(pct / 10)
+        bar = "█" * bar_filled + "░" * (10 - bar_filled)
+        parts.append(f"{meta['icon']} **{meta['title']}** `{bar}` {pct}% ({count} actions)")
+    parts.append("")
+
+    # ── Section 6: Blind spots ────────────────────────────────────────────────
     if blind_spots:
-        parts.append(f"### ⚠️ Blind Spots")
-        parts.append("These sustainability categories haven't been explored yet:")
-        parts.append("")
+        parts += [
+            "### ⚠️ Areas Needing Attention",
+            "These sustainability pillars are underrepresented in the activity log:",
+            "",
+        ]
         for bs in blind_spots:
-            parts.append(f"- **{bs['icon']} {bs['title']}** — {bs['message']}")
-        parts.append("")
-        parts.append("*Try exploring these areas to build a well-rounded sustainability profile!*")
+            severity_label = "🔴 Not started" if bs["severity"] == "blind" else "🟡 Very low activity"
+            parts.append(f"**{bs['icon']} {bs['title']}** — {severity_label} ({bs['coveragePct']}%)")
+            parts.append(f"  {bs['message']}")
+            parts.append("  *Suggested actions:*")
+            for sug in bs["suggestions"][:2]:
+                parts.append(f"  - {sug}")
+            parts.append("")
+        parts.append("*Building a balanced sustainability profile means engaging all three pillars!*")
+    else:
+        parts += [
+            "### 🌟 Well-Rounded Sustainability Profile",
+            "Excellent! All three sustainability pillars are being actively addressed.",
+            "*Keep it up — consistency is the key to long-term impact.*",
+        ]
 
     return "\n".join(parts)
 
 
-# ── Impact report endpoints ───────────────────────────────────────────────────
+# ── Firestore fetch helpers ───────────────────────────────────────────────────
 
 def _fetch_user_impact_report(user_id: str) -> dict:
-    """Blocking Firestore read — runs in thread pool."""
+    """Blocking Firestore read — runs in thread pool via asyncio.to_thread."""
     snaps = db.collection("submissions").where("userId", "==", user_id).stream()
     submissions = [s.to_dict() for s in snaps]
 
-    # Get user name for the narrative
-    user_doc = db.collection("users").document(user_id).get()
+    user_doc  = db.collection("users").document(user_id).get()
     user_name = "You"
     if user_doc.exists:
-        user_data = user_doc.to_dict() or {}
-        user_name = user_data.get("name", "You").split(" ")[0]
+        u = user_doc.to_dict() or {}
+        user_name = u.get("name", "You").split(" ")[0]
 
     return _build_impact_report(submissions, entity_name=user_name)
 
 
 def _fetch_college_impact_report(college_id: str) -> dict:
-    """Blocking Firestore read — runs in thread pool."""
+    """Blocking Firestore read — runs in thread pool via asyncio.to_thread."""
     snaps = db.collection("submissions").where("collegeId", "==", college_id).stream()
     submissions = [s.to_dict() for s in snaps]
 
-    # Get college name for the narrative
-    college_doc = db.collection("colleges").document(college_id).get()
+    col_doc      = db.collection("colleges").document(college_id).get()
     college_name = "Your institution"
-    if college_doc.exists:
-        college_data = college_doc.to_dict() or {}
-        college_name = college_data.get("name", "Your institution")
+    if col_doc.exists:
+        c = col_doc.to_dict() or {}
+        college_name = c.get("name", "Your institution")
 
     return _build_impact_report(submissions, entity_name=college_name)
 
 
+# ── API Endpoints ─────────────────────────────────────────────────────────────
+
 @router.get("/impact-report/college/{college_id}")
 async def college_impact_report(college_id: str):
     """
-    College/org impact report — aggregates all submissions from students
-    belonging to this college into weekly/monthly/yearly data, charts,
-    blind spots, and a narrative text report.
+    College/org impact report.
+    Returns all 3 features: narrativeReport, chartSeries, blindSpots.
     """
     return await asyncio.to_thread(_fetch_college_impact_report, college_id)
 
@@ -343,8 +489,7 @@ async def college_impact_report(college_id: str):
 @router.get("/impact-report/{user_id}")
 async def user_impact_report(user_id: str):
     """
-    Individual/student impact report — aggregates user's own submissions
-    into weekly/monthly/yearly data, charts, blind spots, and a narrative
-    text report.
+    Individual user impact report.
+    Returns all 3 features: narrativeReport, chartSeries, blindSpots.
     """
     return await asyncio.to_thread(_fetch_user_impact_report, user_id)

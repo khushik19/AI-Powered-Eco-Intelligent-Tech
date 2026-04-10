@@ -44,9 +44,12 @@ def _get_headers() -> dict:
 def classify_with_openrouter(image_base64: str, description: str) -> dict:
     """
     Classify an eco-action using AI.
-    - If image_base64 is non-empty: sends image + description to vision model
-    - If image_base64 is empty:     sends description only (text-only, faster)
-    NEVER raises — always returns a valid dict with fallback if AI fails.
+    - Validates whether the image/description represents a real, legitimate eco-action.
+    - Returns isLegitimate=False + rejectionReason if invalid or unrelated.
+    - If image_base64 is non-empty: sends image + description to vision model.
+    - If image_base64 is empty:     sends description only.
+    NEVER raises — always returns a valid dict (fallback if AI errors out).
+    Target: < 15 seconds on OpenRouter with gemini-2.5-flash-lite.
     """
     api_key = os.getenv("OPENROUTER_API_KEY", "")
     if not api_key or not api_key.strip():
@@ -56,38 +59,49 @@ def classify_with_openrouter(image_base64: str, description: str) -> dict:
     model = _get_model()
 
     prompt = (
-        'You are an eco-action classifier for a sustainability rewards app called Clean Cosmos.\n'
-        'The app awards "stardust" points to users for sustainable actions.\n\n'
+        'You are a strict eco-action validator for "Clean Cosmos", a sustainability rewards app.\n'
+        'Your job is to decide if the submitted action is a REAL, LEGITIMATE eco/sustainability action.\n\n'
         f'User description: "{description}"\n\n'
-        + ("Analyze the image and description carefully.\n" if image_base64 else "Analyze the description and classify the eco-action.\n")
-        + 'Return ONLY valid JSON (no markdown, no explanation):\n'
+        + (
+            "IMPORTANT: Look at the image carefully.\n"
+            "- If the image is blank, blurry, irrelevant, or does NOT show any eco-related activity → REJECT.\n"
+            "- If the image clearly shows a real eco-action that matches the description → APPROVE.\n"
+            "- Mismatches between image and description → REJECT.\n"
+            if image_base64 else
+            "No image provided — validate based on description alone.\n"
+            "- If the description is vague, fake-sounding, too short, or not an eco-action → REJECT.\n"
+            "- If the description clearly describes a real sustainability action → APPROVE.\n"
+        )
+        + '\nReturn ONLY valid JSON (no markdown, no explanation):\n'
         '{\n'
+        '  "isLegitimate": true or false,\n'
+        '  "rejectionReason": "Short reason if rejected, else null",\n'
         '  "actionType": "solar|composting|recycling|eWaste|water|energy|transport|cutsWaste|optimizesResources|lowersEmissions|other",\n'
-        '  "stardustAwarded": <integer 10-100, higher for bigger impact>,\n'
-        '  "co2ReducedKg": <estimated kg CO2 saved, 0 if not applicable>,\n'
-        '  "energySavedKwh": <estimated kWh saved, 0 if not applicable>,\n'
-        '  "waterSavedLiters": <estimated liters saved, 0 if not applicable>,\n'
-        '  "eWasteKg": <kg of e-waste handled, 0 if not applicable>,\n'
-        '  "estimatedCostSavingRupees": <estimated INR cost saved, 0 if unknown>,\n'
-        '  "impactSummary": "One concise sentence describing the environmental benefit",\n'
-        '  "realWorldEquivalent": "A relatable comparison e.g. like planting 3 trees",\n'
-        '  "isLegitimate": true\n'
+        '  "stardustAwarded": <integer 10-100 based on impact scale, 0 if rejected>,\n'
+        '  "co2ReducedKg": <estimated kg CO2 avoided, 0 if not applicable or rejected>,\n'
+        '  "energySavedKwh": <estimated kWh saved, 0 if not applicable or rejected>,\n'
+        '  "waterSavedLiters": <estimated liters saved, 0 if not applicable or rejected>,\n'
+        '  "eWasteKg": <kg e-waste handled, 0 if not applicable or rejected>,\n'
+        '  "estimatedCostSavingRupees": <INR saved, 0 if unknown or rejected>,\n'
+        '  "impactSummary": "One sentence describing the benefit (or the reason for rejection)",\n'
+        '  "realWorldEquivalent": "A relatable analogy e.g. equivalent to planting 2 trees (null if rejected)"\n'
         '}'
     )
 
-    # Build message content: include image only if provided
+    # Build message content
     if image_base64:
         content = [
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}},
             {"type": "text", "text": prompt}
         ]
     else:
-        content = prompt  # text-only — works with any model, not just vision
+        content = prompt
 
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": content}],
-        "max_tokens": 512,
+        "max_tokens": 300,   # Tight limit for speed
+        "temperature": 0.2,  # Low randomness for consistent validation
     }
 
     mode = "vision" if image_base64 else "text-only"
@@ -97,7 +111,7 @@ def classify_with_openrouter(image_base64: str, description: str) -> dict:
             "https://openrouter.ai/api/v1/chat/completions",
             headers=_get_headers(),
             json=payload,
-            timeout=20
+            timeout=25  # 25s hard cap — fast model should respond in 5-10s
         )
         if not response.ok:
             print(f"[AI Error] OpenRouter HTTP {response.status_code}: {response.text[:500]}")
@@ -105,33 +119,42 @@ def classify_with_openrouter(image_base64: str, description: str) -> dict:
 
         text = response.json()["choices"][0]["message"]["content"].strip()
 
-        # Strip markdown code fences if present
+        # Strip markdown fences
         if "```json" in text:
             text = text.split("```json")[-1].split("```")[0].strip()
         elif "```" in text:
             text = text.split("```")[1].strip()
 
         result = json.loads(text)
-        print(f"[AI] Classification OK: actionType={result.get('actionType')} stardust={result.get('stardustAwarded')}")
+        legit = result.get("isLegitimate", True)
+        print(
+            f"[AI] Classification OK: actionType={result.get('actionType')} "
+            f"stardust={result.get('stardustAwarded')} legitimate={legit}"
+        )
+        # Ensure required keys always present
+        result.setdefault("rejectionReason", None)
+        result.setdefault("isLegitimate", True)
         return result
+
     except Exception as e:
         print(f"[AI Error] Classification failed ({mode}): {e}")
         return _fallback_result(description)
 
 
 def _fallback_result(description: str) -> dict:
-    """Sensible default metrics when AI fails."""
+    """Returned when AI is unavailable — always approves with minimal points."""
     return {
+        "isLegitimate": True,
+        "rejectionReason": None,
         "actionType": "other",
-        "stardustAwarded": 20,
-        "co2ReducedKg": 0.5,
-        "energySavedKwh": 0.1,
+        "stardustAwarded": 10,
+        "co2ReducedKg": 0.2,
+        "energySavedKwh": 0.0,
         "waterSavedLiters": 0,
         "eWasteKg": 0,
-        "estimatedCostSavingRupees": 5,
-        "impactSummary": "Successfully logged your eco-action!",
-        "realWorldEquivalent": "Keeping the planet a bit cleaner",
-        "isLegitimate": True
+        "estimatedCostSavingRupees": 0,
+        "impactSummary": "Eco-action recorded (AI offline — manual review may apply).",
+        "realWorldEquivalent": None,
     }
 
 
