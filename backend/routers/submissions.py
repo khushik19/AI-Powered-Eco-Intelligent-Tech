@@ -12,14 +12,12 @@ class ClassifyRequest(BaseModel):
 
 
 class SubmissionRequest(BaseModel):
-    """Legacy endpoint kept for compatibility."""
-    userId: str
+    imageBase64: str
+    description: str
+    userId: str = ""
     collegeId: str = ""
     role: str = "student"
-    description: str
     isPredefined: bool = False
-    predefinedActionId: str = None
-    imageUrl: str = ""
 
 
 @router.post("/classify")
