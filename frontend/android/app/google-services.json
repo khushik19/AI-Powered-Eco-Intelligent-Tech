@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "17824399971",
+    "project_id": "ecotrack-hackathon",
+    "storage_bucket": "ecotrack-hackathon.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:17824399971:android:53d7549360b9ee17486e56",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "17824399971-ajh30pd50sgaai8tks0qngrldf3rhf2k.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBM4ItwGbYaM3yJ54VM068lnZIR0Jzp1SY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "17824399971-ajh30pd50sgaai8tks0qngrldf3rhf2k.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
