@@ -129,7 +129,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
               style: const TextStyle(
                   fontFamily: 'Outfit', color: AppColors.textSecondary)),
           const SizedBox(height: 16),
-          ElevatedButton(text: 'Retry', onTap: _loadReport),
+          GlassButton(text: 'Retry', onTap: _loadReport),
         ],
       ),
     );

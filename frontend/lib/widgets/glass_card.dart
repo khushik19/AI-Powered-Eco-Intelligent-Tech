@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 
-<<<<<<< Updated upstream
-// Re-export so screens importing glass_card.dart get LiquidGlassCard too
+// Re-export so screens using glass_card.dart also get LiquidGlassCard.
 export 'liquid_glass_card.dart' show LiquidGlassCard, LiquidGlassButton;
+
+/// Legacy alias — kept so screens that use AppButton still compile.
+/// This is the same widget as GlassButton.
+typedef AppButton = GlassButton;
 
 /// A glassmorphism card used throughout the app.
 class GlassCard extends StatelessWidget {
@@ -15,37 +18,23 @@ class GlassCard extends StatelessWidget {
   final Color? fillColor;
   final Gradient? gradient;
   final VoidCallback? onTap;
-=======
-class GlassCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry? padding;
-  final double borderRadius;
->>>>>>> Stashed changes
 
   const GlassCard({
     super.key,
     required this.child,
     this.padding,
-<<<<<<< Updated upstream
     this.margin,
     this.borderRadius = 16.0,
     this.borderColor,
     this.fillColor,
     this.gradient,
     this.onTap,
-=======
-    this.borderRadius = 16.0,
->>>>>>> Stashed changes
   });
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< Updated upstream
     final container = Container(
       margin: margin,
-=======
-    return Container(
->>>>>>> Stashed changes
       padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: gradient == null ? (fillColor ?? AppColors.glassWhite) : null,
@@ -58,7 +47,6 @@ class GlassCard extends StatelessWidget {
       ),
       child: child,
     );
-<<<<<<< Updated upstream
 
     if (onTap != null) {
       return GestureDetector(onTap: onTap, child: container);
@@ -68,16 +56,14 @@ class GlassCard extends StatelessWidget {
 }
 
 /// Styled action button used with named params across the app.
-/// Usage:  AppButton(text: 'Sign Out', onTap: ..., isOutline: true, color: ...)
-/// Also exported as the default pattern replacing ElevatedButton(text:, onTap:)
-class AppButton extends StatelessWidget {
+class GlassButton extends StatelessWidget {
   final String text;
   final VoidCallback onTap;
   final IconData? icon;
   final Color? color;
   final bool isOutline;
 
-  const AppButton({
+  const GlassButton({
     super.key,
     required this.text,
     required this.onTap,
@@ -145,7 +131,5 @@ class AppButton extends StatelessWidget {
         child: label,
       ),
     );
-=======
->>>>>>> Stashed changes
   }
 }
