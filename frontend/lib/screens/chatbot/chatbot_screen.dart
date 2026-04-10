@@ -48,10 +48,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     } catch (e) {
       setState(() {
         _isTyping = false;
-        _errorMessage = 'Could not reach EcoGPT. Is the backend running?';
+        _errorMessage = 'Could not reach EcoGPT. Check backend logs.';
         _messages.add({
           'role': 'bot',
-          'text': '⚠️ Connection error. Please make sure the backend is running at localhost:8000.',
+          'text': '⚠️ Connection error. The AI service is currently unavailable. This is usually caused by an invalid or revoked API key.',
         });
       });
     }
