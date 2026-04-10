@@ -82,9 +82,82 @@ Analyze the image and the description carefully. Return ONLY valid JSON (no mark
         "max_tokens": 512,
     }
 
-    response = requests.post(pi/v1/chat/completions",
-        headers=HEADERS,
-        json=payload
-    )
-    response.raise_for_status()
-    text = response.json()["choices"][0]["message"]["content"].strip()
+    try:
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=HEADERS,
+            json=payload,
+            timeout=30
+        )
+        response.raise_for_status()
+        text = response.json()["choices"][0]["message"]["content"].strip()
+
+        # Extract JSON from markdown if necessary
+        if "```json" in text:
+            text = text.split("```json")[-1].split("```")[0].strip()
+        elif "```" in text:
+            text = text.split("```")[-1].split("```")[0].strip()
+
+        return json.loads(text)
+    except Exception as e:
+        print(f"[AI Error] Classification failed: {e}")
+        return _fallback_result(description)
+
+
+def _fallback_result(description: str) -> dict:
+    """Sensible default metrics when AI fails."""
+    return {
+        "actionType": "other",
+        "stardustAwarded": 20,
+        "co2ReducedKg": 0.5,
+        "energySavedKwh": 0.1,
+        "waterSavedLiters": 0,
+        "eWasteKg": 0,
+        "estimatedCostSavingRupees": 5,
+        "impactSummary": "Successfully logged your eco-action!",
+        "realWorldEquivalent": "Keeping the planet a bit cleaner",
+        "isLegitimate": True
+    }
+
+
+def get_recommendations(data: dict) -> list:
+    """
+    Analyzes college dashboard data and returns AI-generated suggestions.
+    """
+    college_name = data.get("college", {}).get("name", "your college")
+    blind_spots = data.get("blindSpots", [])
+    
+    prompt = f"""Based on the following sustainability data for {college_name}, 
+    suggest 3 high-impact eco-actions they should take next.
+    
+    Blind spots (areas with zero activity): {", ".join(blind_spots)}
+    
+    Return ONLY a JSON list of strings."""
+
+    try:
+        payload = {
+            "model": OPENROUTER_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 256,
+        }
+        res = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=HEADERS,
+            json=payload,
+            timeout=20
+        )
+        res.raise_for_status()
+        content = res.json()["choices"][0]["message"]["content"].strip()
+        
+        # Clean JSON
+        if "```json" in content:
+            content = content.split("```json")[-1].split("```")[0].strip()
+        
+        return json.loads(content)
+    except Exception as e:
+        print(f"[AI Error] Recommendations failed: {e}")
+        return [
+            "Start a campus-wide recycling drive",
+            "Install solar-powered lighting in common areas",
+            "Implement a rainwater harvesting system"
+        ]

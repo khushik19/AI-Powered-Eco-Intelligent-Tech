@@ -33,7 +33,7 @@ def _do_register(req: RegisterRequest):
         "role": req.role,
         "institutionName": req.institutionName,
         "profilePhotoUrl": req.profilePhotoUrl,
-        "createdAt": datetime.utcnow().isoformat(),
+        "createdAt": datetime.now().isoformat(),
     }
     user_ref = db.collection("users").document(req.uid)
     # merge=True: won't overwrite stardust/streak for returning users
@@ -60,7 +60,7 @@ def _do_register(req: RegisterRequest):
             "totalEnergySavedKwh": 0,
             "totalWaterSavedL": 0,
             "totalEWasteKg": 0,
-            "createdAt": datetime.utcnow().isoformat(),
+            "createdAt": datetime.now().isoformat(),
         }, merge=True)
 
     return {"success": True, "uid": req.uid}
@@ -80,3 +80,4 @@ async def register_user(req: RegisterRequest):
     Called after Firebase Auth creates the user.
     Creates (or updates) the Firestore profile. Safe to call on every login.
     """
+    return await asyncio.to_thread(_do_register, req)

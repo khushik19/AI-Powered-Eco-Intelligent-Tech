@@ -16,7 +16,7 @@ class SubmissionRequest(BaseModel):
     userId: str
     collegeId: str = ""
     role: str = "student"
-    imageBase64: strion: str
+    description: str
     isPredefined: bool = False
     predefinedActionId: str = None
     imageUrl: str = ""

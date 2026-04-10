@@ -37,17 +37,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import submissions, chatbot, challenges, leaderboard, dashboard, suggestions, auth
 
-load_dotenv()
-
-# Initialize Firebase with your service account key
-cred = credentials.Certificate(os.getenv("FIREBASE_CREDENTIALS_PATH"))
-firebase_admin.initialize_app(cred, {
-    "storageBucket": f"{os.getenv('PROJECT_ID')}.appspot.com"
-})
-
-# Import routers AFTER firebase_admin.initialize_app
-from routers import submissions, chatbot, challenges, leaderboard, dashboard, suggestions
-
 app = FastAPI(title="Clean Cosmos API")
 
 app.add_middleware(
@@ -67,3 +56,5 @@ app.include_router(auth.router,         prefix="/auth",         tags=["Auth"])
 
 
 @app.get("/")
+async def root():
+    return {"message": "Welcome to Clean Cosmos API", "version": "1.0.0"}
