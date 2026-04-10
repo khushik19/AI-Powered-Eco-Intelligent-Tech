@@ -5,6 +5,7 @@ from services.firebase_service import (
     save_submission, update_points, upload_image, get_predefined_actions
 )
 from datetime import datetime
+import asyncio
 
 router = APIRouter()
 
@@ -22,13 +23,13 @@ class SubmissionRequest(BaseModel):
 @router.post("/submit")
 async def submit_action(req: SubmissionRequest):
     try:
-        # Step 1: Send image + description to AI, get back impact data
+        # Step 1: AI classifies the image (uses HTTP, not gRPC — no thread needed)
         result = classify_with_openrouter(req.imageBase64, req.description)
 
-        # Step 2: Upload the image to Firebase Storage, get a URL back
+        # Step 2: Upload image (Storage uses HTTP, not blocking gRPC)
         image_url = upload_image(req.imageBase64, f"submissions/{req.collegeId}")
 
-        # Step 3: Build the full document to save in Firestore
+        # Step 3: Build the Firestore document
         submission = {
             "userId": req.userId,
             "collegeId": req.collegeId,
@@ -49,9 +50,9 @@ async def submit_action(req: SubmissionRequest):
             "createdAt": datetime.utcnow().isoformat()
         }
 
-        # Step 4: Save to Firestore and update points
-        submission_id = save_submission(submission)
-        update_points(req.userId, req.collegeId, result["stardustAwarded"], result)
+        # Step 4: Save to Firestore in thread pool (blocking gRPC call)
+        submission_id = await asyncio.to_thread(save_submission, submission)
+        await asyncio.to_thread(update_points, req.userId, req.collegeId, result["stardustAwarded"], result)
 
         return {"success": True, "submissionId": submission_id, **result}
 
@@ -64,4 +65,4 @@ async def submit_action(req: SubmissionRequest):
 @router.get("/predefined/{role}")
 async def get_predefined(role: str):
     """Returns the list of preset eco-actions for the given role."""
-    return get_predefined_actions(role)
+    return await asyncio.to_thread(get_predefined_actions, role)

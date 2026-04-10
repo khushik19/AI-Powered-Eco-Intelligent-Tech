@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from firebase_admin import firestore, auth
+from firebase_admin import firestore
 from datetime import datetime
+import asyncio
 
 router = APIRouter()
 db = firestore.client()
@@ -12,75 +13,83 @@ class RegisterRequest(BaseModel):
     name: str
     email: str = ""
     phone: str = ""
-    city: str
-    state: str
-    country: str
+    city: str = ""
+    state: str = ""
+    country: str = ""
     role: str                   # "individual" | "student" | "college"
-    institutionName: str = ""   # for student/employee
+    institutionName: str = ""
     profilePhotoUrl: str = ""
 
 
-@router.post("/register")
-async def register_user(req: RegisterRequest):
-    """
-    Called after Firebase Auth creates the user.
-    Creates (or updates) the Firestore profile document.
-    Uses merge=True so calling this for returning users is safe.
-    """
-    try:
-        user_data = {
+def _do_register(req: RegisterRequest):
+    """Blocking Firestore writes — runs in thread pool."""
+    user_data = {
+        "name": req.name,
+        "email": req.email,
+        "phone": req.phone,
+        "city": req.city,
+        "state": req.state,
+        "country": req.country,
+        "role": req.role,
+        "institutionName": req.institutionName,
+        "profilePhotoUrl": req.profilePhotoUrl,
+        "createdAt": datetime.utcnow().isoformat(),
+    }
+    user_ref = db.collection("users").document(req.uid)
+    # merge=True: won't overwrite stardust/streak for returning users
+    user_ref.set(user_data, merge=True)
+
+    # Only initialize counters if the doc is brand new
+    snap = user_ref.get().to_dict() or {}
+    if "stardust" not in snap:
+        user_ref.update({"stardust": 0, "totalActions": 0, "currentStreak": 0, "lastActionDate": None})
+
+    # If college/org, also create the colleges doc
+    if req.role == "college":
+        db.collection("colleges").document(req.uid).set({
             "name": req.name,
             "email": req.email,
             "phone": req.phone,
             "city": req.city,
             "state": req.state,
             "country": req.country,
-            "role": req.role,
-            "institutionName": req.institutionName,
-            "profilePhotoUrl": req.profilePhotoUrl,
-            "createdAt": datetime.utcnow().isoformat()
-        }
-        # merge=True: won't overwrite stardust/streak if user already exists
-        db.collection("users").document(req.uid).set(user_data, merge=True)
-        # Ensure these fields exist for new users (not overwritten on re-login)
-        db.collection("users").document(req.uid).update({
-            k: firestore.SERVER_TIMESTAMP if k == 'lastActionDate' else v
-            for k, v in {
-                "stardust": 0, "totalActions": 0,
-                "currentStreak": 0, "lastActionDate": None
-            }.items()
-        })
+            "totalStardust": 0,
+            "accreditationScore": 0,
+            "accreditationTier": "seedling",
+            "totalCo2Kg": 0,
+            "totalEnergySavedKwh": 0,
+            "totalWaterSavedL": 0,
+            "totalEWasteKg": 0,
+            "createdAt": datetime.utcnow().isoformat(),
+        }, merge=True)
 
-        # If it's a college/org, also create a colleges document
-        if req.role == "college":
-            db.collection("colleges").document(req.uid).set({
-                "name": req.name,
-                "email": req.email,
-                "phone": req.phone,
-                "city": req.city,
-                "state": req.state,
-                "country": req.country,
-                "totalStardust": 0,
-                "accreditationScore": 0,
-                "accreditationTier": "seedling",
-                "totalCo2Kg": 0,
-                "totalEnergySavedKwh": 0,
-                "totalWaterSavedL": 0,
-                "totalEWasteKg": 0,
-                "studentCount": 0,
-                "createdAt": datetime.utcnow().isoformat()
-            })
+    return {"success": True, "uid": req.uid}
 
-        return {"success": True, "uid": req.uid}
 
+def _do_get_user(uid: str):
+    """Blocking Firestore read — runs in thread pool."""
+    doc = db.collection("users").document(uid).get()
+    if not doc.exists:
+        return None
+    return {"uid": uid, **doc.to_dict()}
+
+
+@router.post("/register")
+async def register_user(req: RegisterRequest):
+    """
+    Called after Firebase Auth creates the user.
+    Creates (or updates) the Firestore profile. Safe to call on every login.
+    """
+    try:
+        return await asyncio.to_thread(_do_register, req)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/user/{uid}")
 async def get_user(uid: str):
-    """Fetch a user's profile by their Firebase UID."""
-    doc = db.collection("users").document(uid).get()
-    if not doc.exists:
+    """Fetch a user profile by Firebase UID."""
+    result = await asyncio.to_thread(_do_get_user, uid)
+    if result is None:
         raise HTTPException(status_code=404, detail="User not found")
-    return {"uid": uid, **doc.to_dict()}
+    return result

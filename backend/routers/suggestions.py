@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from services.firebase_service import save_suggestion, get_suggestions
 from datetime import datetime
+import asyncio
 
 router = APIRouter()
 
@@ -22,10 +23,10 @@ async def suggest(req: SuggestionRequest):
         "upvotes": 0,
         "createdAt": datetime.utcnow().isoformat()
     }
-    return {"id": save_suggestion(doc)}
+    return {"id": await asyncio.to_thread(save_suggestion, doc)}
 
 
 @router.get("/{college_id}")
 async def list_suggestions(college_id: str):
     """College admin views all suggestions from their students."""
-    return get_suggestions(college_id)
+    return await asyncio.to_thread(get_suggestions, college_id)
