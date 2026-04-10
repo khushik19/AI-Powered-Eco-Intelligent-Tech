@@ -1,8 +1,19 @@
 from firebase_admin import firestore, storage
 from datetime import datetime, timedelta
 import uuid
+import asyncio
 
 db = firestore.client()
+
+
+def _run(fn):
+    """
+    Wraps a zero-argument callable that makes blocking Firestore/gRPC calls
+    and runs it in asyncio's default thread pool.
+    Use: await _run(lambda: db.collection(...).stream())
+    This is the REQUIRED fix for Firebase Admin SDK + FastAPI on Linux (Render).
+    """
+    return asyncio.to_thread(fn)
 
 
 # ── Submissions ───────────────────────────────────────────────────────────────
