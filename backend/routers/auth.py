@@ -21,10 +21,11 @@ class RegisterRequest(BaseModel):
 
 
 @router.post("/register")
-def register_user(req: RegisterRequest):
+async def register_user(req: RegisterRequest):
     """
     Called after Firebase Auth creates the user.
-    Creates the Firestore profile document.
+    Creates (or updates) the Firestore profile document.
+    Uses merge=True so calling this for returning users is safe.
     """
     try:
         user_data = {
@@ -37,15 +38,18 @@ def register_user(req: RegisterRequest):
             "role": req.role,
             "institutionName": req.institutionName,
             "profilePhotoUrl": req.profilePhotoUrl,
-            "stardust": 0,
-            "totalActions": 0,
-            "currentStreak": 0,
-            "lastActionDate": None,
             "createdAt": datetime.utcnow().isoformat()
         }
-
-        # Use Firebase UID as the document ID so it always matches auth
-        db.collection("users").document(req.uid).set(user_data)
+        # merge=True: won't overwrite stardust/streak if user already exists
+        db.collection("users").document(req.uid).set(user_data, merge=True)
+        # Ensure these fields exist for new users (not overwritten on re-login)
+        db.collection("users").document(req.uid).update({
+            k: firestore.SERVER_TIMESTAMP if k == 'lastActionDate' else v
+            for k, v in {
+                "stardust": 0, "totalActions": 0,
+                "currentStreak": 0, "lastActionDate": None
+            }.items()
+        })
 
         # If it's a college/org, also create a colleges document
         if req.role == "college":
@@ -74,7 +78,7 @@ def register_user(req: RegisterRequest):
 
 
 @router.get("/user/{uid}")
-def get_user(uid: str):
+async def get_user(uid: str):
     """Fetch a user's profile by their Firebase UID."""
     doc = db.collection("users").document(uid).get()
     if not doc.exists:
