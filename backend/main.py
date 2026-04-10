@@ -1,25 +1,35 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import os
+import json
+from dotenv import load_dotenv
+
+# ── Load env FIRST before anything else ───────────────────────────────────────
+load_dotenv()
+
 import firebase_admin
 from firebase_admin import credentials
-from dotenv import load_dotenv
-import os
 
-# ✅ Initialize Firebase FIRST — before any router/service imports
-cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "serviceAccountKey.json")
-if os.path.exists(cred_path):
-    cred = credentials.Certificate(cred_path)
-else:
-    import json
-    # On deployment (Render), we will pass the whole JSON as a string
-    cred_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
-    if not cred_json:
-        raise Exception("Missing Firebase Credentials! Check FIREBASE_CREDENTIALS_PATH or FIREBASE_CREDENTIALS_JSON")
-    cred = credentials.Certificate(json.loads(cred_json))
+# ── Initialize Firebase Admin ──────────────────────────────────────────────────
+if not firebase_admin._apps:
+    cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "serviceAccountKey.json")
+    if os.path.exists(cred_path):
+        cred = credentials.Certificate(cred_path)
+    else:
+        cred_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
+        if not cred_json:
+            raise RuntimeError(
+                "Firebase credentials missing! Set FIREBASE_CREDENTIALS_JSON env var on Render."
+            )
+        cred = credentials.Certificate(json.loads(cred_json))
 
-firebase_admin.initialize_app(cred)
+    project_id = os.getenv("PROJECT_ID", "ecotrack-hackathon")
+    firebase_admin.initialize_app(cred, {
+        "storageBucket": f"{project_id}.appspot.com",
+        "projectId": project_id,
+    })
 
-# Import routers AFTER firebase_admin.initialize_app()
+# ── Import routers AFTER Firebase is initialized ───────────────────────────────
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from routers import submissions, chatbot, challenges, leaderboard, dashboard, suggestions, auth
 
 app = FastAPI(title="Clean Cosmos API")
@@ -37,9 +47,24 @@ app.include_router(challenges.router,   prefix="/challenges",   tags=["Challenge
 app.include_router(leaderboard.router,  prefix="/leaderboard",  tags=["Leaderboard"])
 app.include_router(dashboard.router,    prefix="/dashboard",    tags=["Dashboard"])
 app.include_router(suggestions.router,  prefix="/suggestions",  tags=["Suggestions"])
+app.include_router(auth.router,         prefix="/auth",         tags=["Auth"])
 
-app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 
 @app.get("/")
 def root():
-    return {"status": "Clean Cosmos API is running 🌌"}
+    return {"status": "Clean Cosmos API is running"}
+
+
+@app.get("/health")
+async def health():
+    """Quick health check - tests that Firestore is reachable."""
+    try:
+        from firebase_admin import firestore
+        import asyncio
+        db = firestore.client()
+        result = await asyncio.to_thread(
+            lambda: [d.id for d in db.collection("colleges").limit(1).stream()]
+        )
+        return {"status": "ok", "firestore": "connected", "sample_ids": result}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
