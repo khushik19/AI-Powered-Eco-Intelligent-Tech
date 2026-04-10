@@ -81,7 +81,7 @@ class RegisterTypeScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => RegisterScreen(
-                            registrationType: t['type'] as String,
+                            userType: t['type'] as String,
                           ),
                         ),
                       ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import '../widgets/metallic_container.dart';
+import '../widgets/liquid_glass_card.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
@@ -40,7 +40,8 @@ class LandingPage extends StatelessWidget {
                   const SizedBox(height: 20),
                   
                   // Main Metallic Container
-                  MetallicLiquidContainer(
+                  LiquidGlassCard(
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
                         Text(

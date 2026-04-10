@@ -74,7 +74,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
       case 'solar':
         return AppColors.electricCyan;
       default:
-        return AppColors.mutedOlive;
+        return AppColors.textMuted;
     }
   }
 

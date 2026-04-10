@@ -1,156 +1,230 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../config/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
-import 'login_screen.dart';
+import '../home/home_screen.dart';
 
 class SetPasswordScreen extends StatefulWidget {
-  final Map<String, dynamic> userData;
-  const SetPasswordScreen({super.key, required this.userData});
+  final String email;
+  final String name;
+  final String phone;
+  final String userType;
+
+  const SetPasswordScreen({
+    super.key,
+    required this.email,
+    required this.name,
+    required this.phone,
+    required this.userType,
+  });
 
   @override
   State<SetPasswordScreen> createState() => _SetPasswordScreenState();
 }
 
 class _SetPasswordScreenState extends State<SetPasswordScreen> {
-  final _passController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
-  bool _obscure1 = true, _obscure2 = true, _isLoading = false;
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
 
-  void _createAccount() async {
-    if (_passController.text.length < 8) {
-      _showError('Password must be at least 8 characters');
-      return;
-    }
-    if (_passController.text != _confirmController.text) {
-      _showError('Passwords do not match');
-      return;
-    }
+  Future<void> _launch() async {
+    if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
       await AuthService.signUp(
-        email: widget.userData['email'],
-        password: _passController.text,
-        name: widget.userData['name'],
-        role: widget.userData['type'],
-        phone: widget.userData['phone'],
-        city: widget.userData['city'],
-        state: widget.userData['state'],
-        country: widget.userData['country'],
-        institution: widget.userData['institution'],
+        email: widget.email,
+        password: _passwordController.text,
+        name: widget.name,
+        role: widget.userType,
+        phone: widget.phone,
+        city: '',
+        state: '',
+        country: '',
       );
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen(showSuccess: true)),
-          (_) => false,
-        );
-      }
+      // Fetch the freshly created user data
+      final userData = await AuthService.signIn(
+        email: widget.email,
+        password: _passwordController.text,
+      );
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HomeScreen(userData: userData ?? {
+            'name': widget.name,
+            'email': widget.email,
+            'phone': widget.phone,
+            'role': widget.userType,
+            'stardust': 0,
+            'weeklyStreak': 0,
+          }),
+        ),
+        (_) => false,
+      );
     } catch (e) {
-      _showError(e.toString());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Registration failed: ${e.toString().split(']').last}')),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(fontFamily: 'Outfit')),
-        backgroundColor: AppColors.error,
-      ),
-    );
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.bioTeal),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Set Password',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+      ),
       body: CosmicBackground(
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Form(
+            key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: 20),
+                Icon(Icons.lock_outline, color: AppColors.bioTeal, size: 64),
                 const SizedBox(height: 24),
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios,
-                      color: AppColors.textPrimary, size: 20),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const Spacer(),
-                const Text(
-                  'Set Your\nPassword',
+                Text(
+                  'Almost there!',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontSize: 36,
-                    fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
-                    height: 1.2,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
                   ),
-                ).animate().fadeIn(),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Create a secure password for your account',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                ),
                 const SizedBox(height: 40),
-                TextFormField(
-                  controller: _passController,
-                  obscureText: _obscure1,
-                  style: const TextStyle(
-                      fontFamily: 'Outfit', color: AppColors.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline,
-                        color: AppColors.textMuted, size: 18),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscure1 ? Icons.visibility_off : Icons.visibility,
-                        color: AppColors.textMuted,
-                        size: 18,
+                // Password
+                GlassCard(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: TextFormField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    style: TextStyle(color: AppColors.textPrimary),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Password is required';
+                      if (v.length < 6) return 'Minimum 6 characters';
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Password',
+                      hintStyle: TextStyle(color: AppColors.textMuted),
+                      border: InputBorder.none,
+                      icon: Icon(Icons.lock_outline, color: AppColors.bioTeal),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: AppColors.textMuted,
+                        ),
+                        onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword),
                       ),
-                      onPressed: () => setState(() => _obscure1 = !_obscure1),
                     ),
                   ),
-                ).animate().fadeIn(delay: 200.ms),
+                ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: _confirmController,
-                  obscureText: _obscure2,
-                  style: const TextStyle(
-                      fontFamily: 'Outfit', color: AppColors.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    prefixIcon: const Icon(Icons.lock_outline,
-                        color: AppColors.textMuted, size: 18),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscure2 ? Icons.visibility_off : Icons.visibility,
-                        color: AppColors.textMuted,
-                        size: 18,
+                // Confirm Password
+                GlassCard(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: TextFormField(
+                    controller: _confirmController,
+                    obscureText: _obscureConfirm,
+                    style: TextStyle(color: AppColors.textPrimary),
+                    validator: (v) {
+                      if (v == null || v.isEmpty)
+                        return 'Please confirm your password';
+                      if (v != _passwordController.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Confirm Password',
+                      hintStyle: TextStyle(color: AppColors.textMuted),
+                      border: InputBorder.none,
+                      icon: Icon(Icons.lock_outline, color: AppColors.bioTeal),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirm
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: AppColors.textMuted,
+                        ),
+                        onPressed: () =>
+                            setState(() => _obscureConfirm = !_obscureConfirm),
                       ),
-                      onPressed: () => setState(() => _obscure2 = !_obscure2),
                     ),
                   ),
-                ).animate().fadeIn(delay: 300.ms),
-                const SizedBox(height: 32),
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : GlassButton(
-                        text: 'Launch into the Cosmos 🚀',
-                        onTap: _createAccount,
-                      ).animate().fadeIn(delay: 500.ms),
-                const Spacer(flex: 2),
+                ),
+                const SizedBox(height: 40),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _launch,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.bioTeal,
+                    foregroundColor: AppColors.midnightBlack,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 8,
+                    shadowColor: AppColors.bioTeal.withOpacity(0.4),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Launch into the Cosmos 🚀',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
               ],
             ),
+          ),
           ),
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _passController.dispose();
-    _confirmController.dispose();
-    super.dispose();
   }
 }

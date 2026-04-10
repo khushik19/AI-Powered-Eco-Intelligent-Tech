@@ -1,3 +1,4 @@
+import 'dart:math' show max;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -609,7 +610,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: GlassCard(
         padding: const EdgeInsets.all(18),
-        borderColor: AppColors.warning.withValues(alpha: 0.3),
+        borderColor: AppColors.stardustGold.withValues(alpha: 0.3),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -634,7 +635,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: AppColors.warning.withValues(alpha: 0.15),
+                    color: AppColors.stardustGold.withValues(alpha: 0.15),
                   ),
                   child: const Text(
                     'Not explored',
@@ -642,7 +643,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
                       fontFamily: 'Outfit',
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.warning,
+                      color: AppColors.stardustGold,
                     ),
                   ),
                 ),

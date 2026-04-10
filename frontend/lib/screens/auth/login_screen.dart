@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../config/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/cosmic_background.dart';
@@ -8,8 +7,7 @@ import '../home/home_screen.dart';
 import 'register_type_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  final bool showSuccess;
-  const LoginScreen({super.key, this.showSuccess = false});
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -17,51 +15,37 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
-  final _passController = TextEditingController();
-  bool _obscure = true, _isLoading = false;
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    if (widget.showSuccess) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              '🎉 Account created! Welcome to the Cosmos!',
-              style: TextStyle(fontFamily: 'Outfit'),
-            ),
-            backgroundColor: AppColors.cosmicGreen,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      });
-    }
-  }
-
-  void _login() async {
-    if (_emailController.text.isEmpty || _passController.text.isEmpty) {
-      _showError('Please fill all fields');
+  Future<void> _login() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
       return;
     }
     setState(() => _isLoading = true);
     try {
       final userData = await AuthService.signIn(
         email: _emailController.text.trim(),
-        password: _passController.text,
+        password: _passwordController.text,
       );
-      if (mounted && userData != null) {
+      if (!mounted) return;
+      if (userData != null) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(
-              builder: (_) => HomeScreen(userData: userData)),
+          MaterialPageRoute(builder: (_) => HomeScreen(userData: userData)),
           (_) => false,
         );
       }
     } catch (e) {
+      if (!mounted) return;
       final msg = e.toString();
       if (msg.contains('user-not-found') || msg.contains('wrong-password')) {
-        _showError('User not registered. Please sign up first.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not found. Please sign up.')),
+        );
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {
             Navigator.pushReplacement(context,
@@ -69,20 +53,19 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         });
       } else {
-        _showError('Login failed. Check your credentials.');
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Login failed: $msg')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(fontFamily: 'Outfit')),
-        backgroundColor: AppColors.error,
-      ),
-    );
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -91,123 +74,105 @@ class _LoginScreenState extends State<LoginScreen> {
       body: CosmicBackground(
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 40),
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios,
-                      color: AppColors.textPrimary, size: 20),
-                  onPressed: () => Navigator.pop(context),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 40),
+              // Logo / Title
+              Icon(Icons.eco, color: AppColors.bioTeal, size: 64),
+              const SizedBox(height: 16),
+              Text(
+                'Welcome Back',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 40),
-                ShaderMask(
-                  shaderCallback: (b) => const LinearGradient(
-                    colors: [Colors.white, AppColors.nebulaBlue],
-                  ).createShader(b),
-                  child: const Text(
-                    'Welcome\nBack, Star',
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontSize: 36,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      height: 1.2,
-                    ),
-                  ),
-                ).animate().fadeIn(duration: 500.ms),
-                const SizedBox(height: 8),
-                Text(
-                  'Log back into your cosmos.',
-                  style: TextStyle(
-                    fontFamily: 'Outfit',
-                    fontSize: 15,
-                    color: AppColors.textSecondary,
-                  ),
-                ).animate().fadeIn(delay: 200.ms),
-                const SizedBox(height: 48),
-                TextFormField(
+              ),
+              Text(
+                'Login to your cosmos',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 40),
+              // Email field
+              GlassCard(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(
-                      fontFamily: 'Outfit', color: AppColors.textPrimary),
-                  decoration: const InputDecoration(
-                    labelText: 'Email or Phone',
-                    prefixIcon: Icon(Icons.alternate_email,
-                        color: AppColors.textMuted, size: 18),
-                  ),
-                ).animate().fadeIn(delay: 300.ms),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passController,
-                  obscureText: _obscure,
-                  style: const TextStyle(
-                      fontFamily: 'Outfit', color: AppColors.textPrimary),
+                  style: TextStyle(color: AppColors.textPrimary),
                   decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline,
-                        color: AppColors.textMuted, size: 18),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscure ? Icons.visibility_off : Icons.visibility,
-                        color: AppColors.textMuted,
-                        size: 18,
-                      ),
-                      onPressed: () => setState(() => _obscure = !_obscure),
-                    ),
+                    hintText: 'Email',
+                    hintStyle: TextStyle(color: AppColors.textMuted),
+                    border: InputBorder.none,
+                    icon: Icon(Icons.email_outlined, color: AppColors.bioTeal),
                   ),
-                ).animate().fadeIn(delay: 400.ms),
-                const SizedBox(height: 40),
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : GlassButton(
-                        text: 'Enter the Cosmos',
-                        icon: Icons.login,
-                        onTap: _login,
-                      ).animate().fadeIn(delay: 500.ms),
-                const SizedBox(height: 24),
-                Center(
-                  child: GestureDetector(
-                    onTap: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const RegisterTypeScreen()),
-                    ),
-                    child: RichText(
-                      text: TextSpan(
-                        text: 'New to the Cosmos? ',
-                        style: const TextStyle(
-                          fontFamily: 'Outfit',
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Password field
+              GlassCard(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: TextField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  style: TextStyle(color: AppColors.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: 'Password',
+                    hintStyle: TextStyle(color: AppColors.textMuted),
+                    border: InputBorder.none,
+                    icon: Icon(Icons.lock_outline, color: AppColors.bioTeal),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              // Login button
+              ElevatedButton(
+                onPressed: _isLoading ? null : _login,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.cosmicGreen,
+                  foregroundColor: AppColors.midnightBlack,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Login',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                        children: [
-                          TextSpan(
-                            text: 'Join Now',
-                            style: TextStyle(
-                              color: AppColors.nebulaBlue,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
                       ),
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 600.ms),
-                const SizedBox(height: 40),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              // Register link
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "Don't have an account? Register",
+                  style: TextStyle(color: AppColors.bioTeal),
+                ),
+              ),
+            ],
+          ),
           ),
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passController.dispose();
-    super.dispose();
   }
 }

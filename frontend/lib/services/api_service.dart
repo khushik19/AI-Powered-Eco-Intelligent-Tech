@@ -494,4 +494,35 @@ class ApiService {
     }
     return [];
   }
+
+  /// Fetch personal impact report for a user.
+  Future<Map<String, dynamic>> getImpactReport(String userId) async {
+    debugPrint('[Report] GET $_baseUrl/reports/user/$userId');
+    try {
+      final res = await http
+          .get(Uri.parse('$_baseUrl/reports/user/$userId'), headers: _headers)
+          .timeout(const Duration(seconds: 30));
+      _assertOk(res);
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('[Report] exception: $e');
+      rethrow;
+    }
+  }
+
+  /// Fetch college-wide impact report.
+  Future<Map<String, dynamic>> getCollegeImpactReport(String collegeId) async {
+    debugPrint('[Report] GET $_baseUrl/reports/college/$collegeId');
+    try {
+      final res = await http
+          .get(Uri.parse('$_baseUrl/reports/college/$collegeId'),
+              headers: _headers)
+          .timeout(const Duration(seconds: 30));
+      _assertOk(res);
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('[Report] exception: $e');
+      rethrow;
+    }
+  }
 }
