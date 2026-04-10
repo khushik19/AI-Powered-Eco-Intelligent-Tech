@@ -9,17 +9,23 @@ ROBUSTNESS DESIGN:
 - Detailed error logging so Render logs show exactly what went wrong.
 - 30s timeout on all HTTP calls so they never hang the request.
 - Headers are built lazily so env vars loaded after module import still work.
+- Model is read lazily (via _get_model()) so Render env vars always win.
 """
 
 import os
-import re
 import json
 import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free")
+# Default model — override with OPENROUTER_MODEL env var on Render dashboard.
+_DEFAULT_MODEL = "google/gemini-2.5-flash-lite"
+
+
+def _get_model() -> str:
+    """Read model from env every call so Render env vars are never stale."""
+    return os.getenv("OPENROUTER_MODEL", _DEFAULT_MODEL)
 
 
 def _get_headers() -> dict:
@@ -34,80 +40,82 @@ def _get_headers() -> dict:
 
 
 # ── 1. Vision model: classify image + quantify impact ─────────────────────────
-# This is called when a user submits a photo of their eco-action.
-# It sends the image + description to the AI and gets back structured data
-# (action type, stardust points, CO2 saved, etc.)
 
 def classify_with_openrouter(image_base64: str, description: str) -> dict:
     """
-    Classify an eco-action image using AI.
-    NEVER raises — always returns a valid dict.
-    If AI fails, returns a sensible fallback so the submission still works.
+    Classify an eco-action using AI.
+    - If image_base64 is non-empty: sends image + description to vision model
+    - If image_base64 is empty:     sends description only (text-only, faster)
+    NEVER raises — always returns a valid dict with fallback if AI fails.
     """
-    # Guard: no API key configured
     api_key = os.getenv("OPENROUTER_API_KEY", "")
     if not api_key or not api_key.strip():
         print("[AI] WARNING: OPENROUTER_API_KEY not set — using fallback.")
         return _fallback_result(description)
 
-    model = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free")
+    model = _get_model()
 
-    prompt = f"""You are an eco-action classifier for a sustainability rewards app called Clean Cosmos.
-The app awards "stardust" points to users for sustainable actions.
+    prompt = (
+        'You are an eco-action classifier for a sustainability rewards app called Clean Cosmos.\n'
+        'The app awards "stardust" points to users for sustainable actions.\n\n'
+        f'User description: "{description}"\n\n'
+        + ("Analyze the image and description carefully.\n" if image_base64 else "Analyze the description and classify the eco-action.\n")
+        + 'Return ONLY valid JSON (no markdown, no explanation):\n'
+        '{\n'
+        '  "actionType": "solar|composting|recycling|eWaste|water|energy|transport|cutsWaste|optimizesResources|lowersEmissions|other",\n'
+        '  "stardustAwarded": <integer 10-100, higher for bigger impact>,\n'
+        '  "co2ReducedKg": <estimated kg CO2 saved, 0 if not applicable>,\n'
+        '  "energySavedKwh": <estimated kWh saved, 0 if not applicable>,\n'
+        '  "waterSavedLiters": <estimated liters saved, 0 if not applicable>,\n'
+        '  "eWasteKg": <kg of e-waste handled, 0 if not applicable>,\n'
+        '  "estimatedCostSavingRupees": <estimated INR cost saved, 0 if unknown>,\n'
+        '  "impactSummary": "One concise sentence describing the environmental benefit",\n'
+        '  "realWorldEquivalent": "A relatable comparison e.g. like planting 3 trees",\n'
+        '  "isLegitimate": true\n'
+        '}'
+    )
 
-User description: "{description}"
-
-Analyze the image and the description carefully. Return ONLY valid JSON (no markdown, no explanation):
-{{
-  "actionType": "solar|composting|recycling|eWaste|water|energy|transport|cutsWaste|optimizesResources|lowersEmissions|other",
-  "stardustAwarded": <integer 10-100, higher for bigger impact>,
-  "co2ReducedKg": <estimated kg CO2 saved, 0 if not applicable>,
-  "energySavedKwh": <estimated kWh saved, 0 if not applicable>,
-  "waterSavedLiters": <estimated liters saved, 0 if not applicable>,
-  "eWasteKg": <kg of e-waste handled, 0 if not applicable>,
-  "estimatedCostSavingRupees": <estimated INR cost saved, 0 if unknown>,
-  "impactSummary": "One concise sentence describing the environmental benefit",
-  "realWorldEquivalent": "A relatable comparison e.g. like planting 3 trees",
-  "isLegitimate": true
-}}"""
+    # Build message content: include image only if provided
+    if image_base64:
+        content = [
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}},
+            {"type": "text", "text": prompt}
+        ]
+    else:
+        content = prompt  # text-only — works with any model, not just vision
 
     payload = {
-        "model": model,   # vision-capable model from env (e.g. google/gemini-2.0-flash-exp:free)
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
-                    },
-                    {"type": "text", "text": prompt}
-                ]
-            }
-        ],
+        "model": model,
+        "messages": [{"role": "user", "content": content}],
         "max_tokens": 512,
     }
 
-    print(f"[AI] Classifying with model: {model}")
+    mode = "vision" if image_base64 else "text-only"
+    print(f"[AI] Classifying ({mode}) with model: {model}")
     try:
         response = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers=_get_headers(),
             json=payload,
-            timeout=25
+            timeout=20
         )
-        response.raise_for_status()
+        if not response.ok:
+            print(f"[AI Error] OpenRouter HTTP {response.status_code}: {response.text[:500]}")
+            response.raise_for_status()
+
         text = response.json()["choices"][0]["message"]["content"].strip()
 
-        # Extract JSON from markdown if necessary
+        # Strip markdown code fences if present
         if "```json" in text:
             text = text.split("```json")[-1].split("```")[0].strip()
         elif "```" in text:
-            text = text.split("```")[-1].split("```")[0].strip()
+            text = text.split("```")[1].strip()
 
-        return json.loads(text)
+        result = json.loads(text)
+        print(f"[AI] Classification OK: actionType={result.get('actionType')} stardust={result.get('stardustAwarded')}")
+        return result
     except Exception as e:
-        print(f"[AI Error] Classification failed: {e}")
+        print(f"[AI Error] Classification failed ({mode}): {e}")
         return _fallback_result(description)
 
 
@@ -131,19 +139,20 @@ def get_recommendations(data: dict) -> list:
     """
     Analyzes college dashboard data and returns AI-generated suggestions.
     """
+    model = _get_model()
     college_name = data.get("college", {}).get("name", "your college")
     blind_spots = data.get("blindSpots", [])
-    
-    prompt = f"""Based on the following sustainability data for {college_name}, 
-    suggest 3 high-impact eco-actions they should take next.
-    
-    Blind spots (areas with zero activity): {", ".join(blind_spots)}
-    
-    Return ONLY a JSON list of strings."""
+
+    prompt = (
+        f"Based on the following sustainability data for {college_name}, "
+        "suggest 3 high-impact eco-actions they should take next.\n\n"
+        f"Blind spots (areas with zero activity): {', '.join(blind_spots)}\n\n"
+        "Return ONLY a JSON array of 3 strings."
+    )
 
     try:
         payload = {
-            "model": OPENROUTER_MODEL,
+            "model": model,
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 256,
         }
@@ -153,13 +162,18 @@ def get_recommendations(data: dict) -> list:
             json=payload,
             timeout=20
         )
-        res.raise_for_status()
+        if not res.ok:
+            print(f"[AI Error] Recommendations HTTP {res.status_code}: {res.text[:300]}")
+            res.raise_for_status()
+
         content = res.json()["choices"][0]["message"]["content"].strip()
-        
+
         # Clean JSON
         if "```json" in content:
             content = content.split("```json")[-1].split("```")[0].strip()
-        
+        elif "```" in content:
+            content = content.split("```")[1].strip()
+
         return json.loads(content)
     except Exception as e:
         print(f"[AI Error] Recommendations failed: {e}")
@@ -170,34 +184,95 @@ def get_recommendations(data: dict) -> list:
         ]
 
 
-def chat_with_openrouter(query: str, history: list = []) -> str:
+def _call_openrouter_chat(messages: list, model: str, api_key: str) -> str | None:
     """
-    Eco-chatbot that handles user queries about sustainability.
+    Makes a single OpenRouter chat request.
+    Returns the reply string on success, None on any failure.
+    Logs full error body so Render dashboard shows exactly what went wrong.
     """
-    system_prompt = (
-        "You are EcoGPT, a friendly sustainability expert for the Clean Cosmos app. "
-        "Keep your answers helpful, concise, and focused on environmental impact."
-    )
-    
-    messages = [{"role": "system", "content": system_prompt}]
-    for msg in history:
-        messages.append(msg)
-    messages.append({"role": "user", "content": query})
-
+    payload = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": 1024,
+    }
     try:
-        payload = {
-            "model": OPENROUTER_MODEL,
-            "messages": messages,
-            "max_tokens": 1024,
-        }
         res = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
-            headers=_get_headers(),
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://cleancosmos.web.app",
+                "X-Title": "Clean Cosmos",
+            },
             json=payload,
-            timeout=30
+            timeout=30,
         )
-        res.raise_for_status()
-        return res.json()["choices"][0]["message"]["content"].strip()
+        if res.ok:
+            reply = res.json()["choices"][0]["message"]["content"].strip()
+            print(f"[AI Chat] OK model={model} reply_len={len(reply)}")
+            return reply
+        else:
+            print(f"[AI Chat] {model} → HTTP {res.status_code}: {res.text[:400]}")
+            return None
     except Exception as e:
-        print(f"[AI Error] Chat failed: {e}")
-        return "I'm sorry, I'm having trouble connecting to my eco-brain right now. Try again later!"
+        print(f"[AI Chat] {model} → exception: {e}")
+        return None
+
+
+def chat_with_openrouter(query: str, history: list = []) -> str:
+    """
+    Eco-chatbot (Nebula) that handles user queries about sustainability.
+    Called from an async FastAPI route via asyncio.to_thread — do NOT make async.
+    Tries preferred model first, falls back to guaranteed-free models on failure.
+    """
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+
+    if not api_key or not api_key.strip():
+        print("[AI] WARNING: OPENROUTER_API_KEY not set — chatbot unavailable.")
+        return "I'm not configured yet. Please set OPENROUTER_API_KEY in the Render environment."
+
+    system_prompt = (
+        "You are Nebula, a friendly and knowledgeable sustainability expert for the Clean Cosmos app. "
+        "Help users understand eco-actions, their environmental impact, and how to live more sustainably. "
+        "Keep answers helpful, concise, and focused on environmental impact."
+    )
+
+    messages = [{"role": "system", "content": system_prompt}]
+
+    # Sanitise history — only include valid role/content dicts
+    for msg in history:
+        role = msg.get("role", "") if isinstance(msg, dict) else ""
+        content = msg.get("content", "") if isinstance(msg, dict) else ""
+        if role in ("user", "assistant") and content:
+            messages.append({"role": role, "content": content})
+
+    messages.append({"role": "user", "content": query})
+
+    # Model fallback chain: preferred → proven free alternatives
+    preferred = _get_model()
+    fallback_models = [
+        "google/gemma-3-27b-it:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+    ]
+
+    # Try preferred model first
+    print(f"[AI Chat] Trying preferred model: {preferred}")
+    reply = _call_openrouter_chat(messages, preferred, api_key)
+    if reply:
+        return reply
+
+    # If preferred fails, try fallbacks
+    for fb_model in fallback_models:
+        if fb_model == preferred:
+            continue  # skip if already tried
+        print(f"[AI Chat] Preferred failed — trying fallback: {fb_model}")
+        reply = _call_openrouter_chat(messages, fb_model, api_key)
+        if reply:
+            return reply
+
+    print("[AI Chat] All models failed — returning user-friendly error")
+    return (
+        "I'm having trouble connecting to my eco-brain right now. "
+        "This usually means the AI service is temporarily unavailable. "
+        "Please try again in a moment!"
+    )

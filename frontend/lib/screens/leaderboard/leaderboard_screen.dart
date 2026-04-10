@@ -23,8 +23,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   String? _error;
 
   // Emojis assigned by rank position
-  static const _rankEmojis = ['👑', '🌟', '⭐', '✨', '💫', '🌙', '🔥', '🌿', '💎', '🚀'];
-
+  static const _rankEmojis = ['', '🌟', '⭐', '✨', '💫', '🌙', '🔥', '🌿', '💎', '🚀'];
+  
   @override
   void initState() {
     super.initState();

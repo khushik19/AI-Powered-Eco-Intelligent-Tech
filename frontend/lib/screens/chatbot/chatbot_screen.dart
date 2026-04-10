@@ -8,7 +8,8 @@ import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
 
 class ChatbotScreen extends StatefulWidget {
-  const ChatbotScreen({super.key});
+  final Map<String, dynamic>? userData; // optional — for role-based suggestions
+  const ChatbotScreen({super.key, this.userData});
 
   @override
   State<ChatbotScreen> createState() => _ChatbotScreenState();
@@ -18,9 +19,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
-  final List<Map<String, String>> _history = []; // for API history
+  final List<Map<String, String>> _history = [];
   bool _isTyping = false;
-  String? _errorMessage;
+
+  String get _userRole =>
+      widget.userData?['role'] as String? ?? 'individual';
 
   void _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
@@ -28,19 +31,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     setState(() {
       _messages.add({'role': 'user', 'text': text});
       _isTyping = true;
-      _errorMessage = null;
     });
     _scrollToBottom();
 
     try {
-      // Add user turn to history before calling API
       _history.add({'role': 'user', 'content': text});
-
-      final reply = await ApiService.instance.sendChatMessage(text, _history);
-
-      // Add assistant turn to history for next call
+      final reply =
+          await ApiService.instance.sendChatMessage(text, _history);
       _history.add({'role': 'assistant', 'content': reply});
-
       setState(() {
         _isTyping = false;
         _messages.add({'role': 'bot', 'text': reply});
@@ -48,10 +46,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     } catch (e) {
       setState(() {
         _isTyping = false;
-        _errorMessage = 'Could not reach EcoGPT. Check backend logs.';
         _messages.add({
           'role': 'bot',
-          'text': '⚠️ Connection error. The AI service is currently unavailable. This is usually caused by an invalid or revoked API key.',
+          'text':
+              'Connection error. Nebula is currently unavailable. Please check backend logs.',
         });
       });
     }
@@ -77,7 +75,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Header
+              // Header — Nebula
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 24, 0),
                 child: Row(
@@ -93,7 +91,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
-                          colors: [AppColors.nebulaBlue, AppColors.cosmicPurple],
+                          colors: [
+                            AppColors.tealBlue,
+                            AppColors.forestGreen
+                          ],
                         ),
                       ),
                       child: const Center(
@@ -102,27 +103,30 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'EcoGPT',
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                            color: AppColors.textPrimary,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Nebula',
+                            style: TextStyle(
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
-                        ),
-                        Text(
-                          'Your cosmic sustainability guide',
-                          style: TextStyle(
-                            fontFamily: 'Outfit',
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
+                          Text(
+                            'Your cosmic sustainability guide',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: 'Outfit',
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -131,12 +135,16 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               // Messages
               Expanded(
                 child: _messages.isEmpty
-                    ? _SuggestionsView(onTap: _sendMessage)
+                    ? _SuggestionsView(
+                        onTap: _sendMessage,
+                        role: _userRole,
+                      )
                     : ListView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 8),
-                        itemCount: _messages.length + (_isTyping ? 1 : 0),
+                        itemCount:
+                            _messages.length + (_isTyping ? 1 : 0),
                         itemBuilder: (context, i) {
                           if (i == _messages.length && _isTyping) {
                             return _TypingIndicator();
@@ -150,13 +158,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                         },
                       ),
               ),
-              // Input bar
+              // Input bar — arrow right
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: GlassCard(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 8),
-                  borderColor: AppColors.nebulaBlue.withOpacity(0.3),
+                  borderColor: AppColors.oliveGreen.withOpacity(0.3),
                   child: Row(
                     children: [
                       Expanded(
@@ -167,19 +175,21 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                               color: AppColors.textPrimary,
                               fontSize: 14),
                           decoration: const InputDecoration(
-                            hintText: 'Ask about sustainability...',
+                            hintText: 'Ask Nebula anything...',
                             hintStyle: TextStyle(
                                 fontFamily: 'Outfit',
                                 color: AppColors.textMuted),
                             border: InputBorder.none,
                             isDense: true,
-                            contentPadding: EdgeInsets.symmetric(vertical: 8),
+                            contentPadding:
+                                EdgeInsets.symmetric(vertical: 8),
                           ),
                           onSubmitted: _sendMessage,
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => _sendMessage(_messageController.text),
+                        onTap: () =>
+                            _sendMessage(_messageController.text),
                         child: Container(
                           width: 36,
                           height: 36,
@@ -187,13 +197,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
                               colors: [
-                                AppColors.cosmicPurple,
-                                AppColors.nebulaBlue
+                                AppColors.tealBlue,
+                                AppColors.forestGreen,
                               ],
                             ),
                           ),
-                          child: const Icon(Icons.send,
-                              color: Colors.white, size: 16),
+                          child: const Icon(Icons.arrow_forward,
+                              color: Colors.white, size: 18),
                         ),
                       ),
                     ],
@@ -217,10 +227,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
 class _SuggestionsView extends StatelessWidget {
   final void Function(String) onTap;
-  const _SuggestionsView({required this.onTap});
+  final String role;
+  const _SuggestionsView({required this.onTap, required this.role});
 
   @override
   Widget build(BuildContext context) {
+    final suggestions = AppConstants.suggestionsForRole(role);
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -238,16 +250,19 @@ class _SuggestionsView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          ...AppConstants.chatSuggestions.asMap().entries.map((entry) {
+          ...suggestions.asMap().entries.map((entry) {
             final i = entry.key;
             final s = entry.value;
             return GlassCard(
               margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               onTap: () => onTap(s['q']!),
               child: Row(
                 children: [
-                  const Text('💬', style: TextStyle(fontSize: 16)),
+                  // Star icon instead of chat bubble emoji
+                  const Icon(Icons.star_outline,
+                      color: AppColors.oliveGreen, size: 18),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -263,7 +278,8 @@ class _SuggestionsView extends StatelessWidget {
                       color: AppColors.textMuted, size: 14),
                 ],
               ),
-            ).animate().fadeIn(delay: Duration(milliseconds: 100 + i * 80));
+            ).animate().fadeIn(
+                delay: Duration(milliseconds: 100 + i * 80));
           }),
         ],
       ),
@@ -285,15 +301,18 @@ class _MessageBubble extends StatelessWidget {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.80,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16).copyWith(
-            bottomRight: isUser ? const Radius.circular(4) : null,
-            bottomLeft: !isUser ? const Radius.circular(4) : null,
+            bottomRight:
+                isUser ? const Radius.circular(4) : null,
+            bottomLeft:
+                !isUser ? const Radius.circular(4) : null,
           ),
           gradient: isUser
               ? const LinearGradient(
-                  colors: [AppColors.cosmicPurple, AppColors.nebulaBlue],
+                  colors: [AppColors.tealBlue, AppColors.forestGreen],
                 )
               : null,
           color: isUser ? null : AppColors.glassWhiteStrong,
@@ -302,7 +321,6 @@ class _MessageBubble extends StatelessWidget {
               : Border.all(color: AppColors.glassBorder),
         ),
         child: isUser
-            // User messages: plain text (they won't contain markdown)
             ? Text(
                 text,
                 style: const TextStyle(
@@ -312,7 +330,6 @@ class _MessageBubble extends StatelessWidget {
                   height: 1.5,
                 ),
               )
-            // Bot messages: render markdown (bold, bullets, headings etc.)
             : MarkdownBody(
                 data: text,
                 styleSheet: MarkdownStyleSheet(
@@ -329,16 +346,10 @@ class _MessageBubble extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     height: 1.5,
                   ),
-                  em: const TextStyle(
-                    fontFamily: 'Outfit',
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                    fontStyle: FontStyle.italic,
-                  ),
                   listBullet: const TextStyle(
                     fontFamily: 'Outfit',
                     fontSize: 14,
-                    color: AppColors.nebulaBlue,
+                    color: AppColors.oliveGreen,
                   ),
                   h1: const TextStyle(
                     fontFamily: 'Montserrat',
@@ -352,29 +363,11 @@ class _MessageBubble extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
-                  h3: const TextStyle(
+                  h3: TextStyle(
                     fontFamily: 'Montserrat',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.nebulaBlue,
-                  ),
-                  blockquote: const TextStyle(
-                    fontFamily: 'Outfit',
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  code: const TextStyle(
-                    fontFamily: 'Outfit',
-                    fontSize: 13,
-                    color: AppColors.cosmicGreen,
-                  ),
-                  blockquoteDecoration: BoxDecoration(
-                    color: AppColors.nebulaBlue.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(4),
-                    border: const Border(
-                      left: BorderSide(color: AppColors.nebulaBlue, width: 3),
-                    ),
+                    color: AppColors.oliveGreen,
                   ),
                 ),
               ),
@@ -413,7 +406,8 @@ class _TypingIndicatorState extends State<_TypingIndicator>
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16).copyWith(
             bottomLeft: const Radius.circular(4),
@@ -438,7 +432,8 @@ class _TypingIndicatorState extends State<_TypingIndicator>
                   height: 6,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.nebulaBlue.withOpacity(opacity),
+                    color:
+                        AppColors.oliveGreen.withOpacity(opacity),
                   ),
                 );
               },

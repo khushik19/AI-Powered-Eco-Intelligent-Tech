@@ -20,39 +20,69 @@ class WelcomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Spacer(flex: 2),
-                // Logo + app name row
+
+                // ── Logo + app name row ───────────────────────────────────
                 Row(
                   children: [
+                    // Real logo image (falls back to gradient circle if missing)
                     Container(
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [AppColors.cosmicPurple, AppColors.nebulaBlue],
-                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.electricCyan.withOpacity(0.3),
+                            blurRadius: 16,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
-                      child: const Center(
-                        child: Text('🌌', style: TextStyle(fontSize: 22)),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.electricCyan,
+                                  AppColors.neonMoss,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      'CLEAN COSMOS',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary,
-                        letterSpacing: 3,
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [AppColors.neonMoss, AppColors.electricCyan],
+                      ).createShader(bounds),
+                      child: const Text(
+                        'CLEAN COSMOS',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 3,
+                        ),
                       ),
                     ),
                   ],
                 ).animate().fadeIn(duration: 600.ms),
+
                 const SizedBox(height: 48),
+
+                // ── Hero headline ─────────────────────────────────────────
                 ShaderMask(
                   shaderCallback: (bounds) => const LinearGradient(
-                    colors: [Colors.white, AppColors.nebulaBlue],
+                    colors: [AppColors.softGrey, AppColors.neonMoss],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ).createShader(bounds),
@@ -70,7 +100,9 @@ class WelcomeScreen extends StatelessWidget {
                     .animate()
                     .fadeIn(delay: 200.ms, duration: 700.ms)
                     .slideX(begin: -0.1, end: 0),
+
                 const SizedBox(height: 16),
+
                 Text(
                   'Track your sustainability journey,\nearn stardust, and help heal the planet.',
                   style: TextStyle(
@@ -80,12 +112,14 @@ class WelcomeScreen extends StatelessWidget {
                     height: 1.6,
                   ),
                 ).animate().fadeIn(delay: 400.ms),
+
                 const Spacer(),
-                // Action buttons
+
+                // ── Primary CTA ───────────────────────────────────────────
                 GlassButton(
                   text: 'Enter the Cosmos',
                   icon: Icons.rocket_launch_outlined,
-                  color: AppColors.cosmicPurple,
+                  color: AppColors.electricCyan,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -93,16 +127,20 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ),
                 ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
+
                 const SizedBox(height: 16),
+
+                // ── Secondary CTA ─────────────────────────────────────────
                 GlassButton(
                   text: 'Already a Star? Login',
                   isOutline: true,
-                  color: AppColors.nebulaBlue,
+                  color: AppColors.neonMoss,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                   ),
                 ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.2, end: 0),
+
                 const SizedBox(height: 48),
               ],
             ),

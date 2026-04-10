@@ -8,8 +8,8 @@ class AppTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.cosmicPurple,
-        secondary: AppColors.nebulaBlue,
+        primary: AppColors.electricCyan,
+        secondary: AppColors.neonMoss,
         surface: AppColors.backgroundSecondary,
         error: AppColors.error,
       ),
@@ -79,8 +79,8 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.cosmicPurple,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.electricCyan,
+          foregroundColor: AppColors.midnightBlack,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -96,7 +96,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.glassWhite,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.glassBorder),
@@ -107,7 +108,8 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.nebulaBlue, width: 1.5),
+          borderSide:
+              const BorderSide(color: AppColors.electricCyan, width: 1.5),
         ),
         labelStyle: const TextStyle(
           fontFamily: 'Outfit',

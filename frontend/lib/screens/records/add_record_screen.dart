@@ -30,11 +30,14 @@ class AddRecordScreen extends StatefulWidget {
 class _AddRecordScreenState extends State<AddRecordScreen> {
   final _descController = TextEditingController();
   final _titleController = TextEditingController();
-  XFile? _mediaFile;
+
+  // Multiple media files
+  final List<XFile> _mediaFiles = [];
+  final List<bool> _isVideoFlags = [];
+
   String? _selectedActivity;
   String? _selectedCategory;
   bool _isLoading = false;
-  bool _isVideo = false;
 
   @override
   void initState() {
@@ -52,20 +55,36 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
   Future<void> _pickMedia({bool video = false}) async {
     final picker = ImagePicker();
-    final picked = video
-        ? await picker.pickVideo(source: ImageSource.gallery)
-        : await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() {
-        _mediaFile = picked;
-        _isVideo = video;
-      });
+    if (video) {
+      final picked = await picker.pickVideo(source: ImageSource.gallery);
+      if (picked != null) {
+        setState(() {
+          _mediaFiles.add(picked);
+          _isVideoFlags.add(true);
+        });
+      }
+    } else {
+      // Allow multiple images
+      final picked = await picker.pickMultiImage();
+      if (picked.isNotEmpty) {
+        setState(() {
+          _mediaFiles.addAll(picked);
+          _isVideoFlags.addAll(List.filled(picked.length, false));
+        });
+      }
     }
   }
 
+  void _removeMedia(int index) {
+    setState(() {
+      _mediaFiles.removeAt(index);
+      _isVideoFlags.removeAt(index);
+    });
+  }
+
   void _submit() async {
-    if (_mediaFile == null) {
-      _showSnack('Please upload an image or video of your activity', AppColors.error);
+    if (_mediaFiles.isEmpty) {
+      _showSnack('Please upload at least one photo or video', AppColors.error);
       return;
     }
     if (_descController.text.trim().isEmpty) {
@@ -79,37 +98,45 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Read image bytes once — used for both Storage upload and AI analysis
-      final bytes = await _mediaFile!.readAsBytes();
+      // Use first media file for AI analysis
+      final bytes = await _mediaFiles.first.readAsBytes();
       final imageBase64 = base64Encode(bytes);
 
       final description = widget.isCustom
           ? '${_titleController.text.trim()}: ${_descController.text.trim()}'
           : '${_selectedActivity ?? ''}: ${_descController.text.trim()}';
 
+      // Submit with verifying status
       final result = await ApiService.instance.submitAction(
-        userId: widget.userData['uid'] as String? ?? widget.userData['id'] as String? ?? '',
+        userId: widget.userData['uid'] as String? ??
+            widget.userData['id'] as String? ??
+            '',
         collegeId: widget.userData['collegeId'] as String? ?? '',
         role: widget.userData['role'] as String? ?? 'student',
-        imageBytes: bytes,        // for Firebase Storage upload (client-side)
-        imageBase64: imageBase64, // for AI vision model (backend)
+        imageBytes: bytes,
+        imageBase64: imageBase64,
         description: description,
         isPredefined: !widget.isCustom,
       );
 
       final stardust = result['stardustAwarded'] ?? 50;
-      final summary = result['impactSummary'] ?? 'Great eco action!';
 
       setState(() => _isLoading = false);
       if (mounted) {
-        _showSnack('🌟 Activity recorded! +$stardust Stardust earned! $summary', AppColors.cosmicGreen);
+        _showSnack(
+          'Record submitted! Verifying your action... +$stardust stardust pending',
+          AppColors.oliveGreen,
+        );
         await Future.delayed(const Duration(seconds: 2));
         Navigator.pop(context);
       }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        _showSnack('⚠️ Submission failed: ${e.toString().replaceAll('Exception: ', '')}', AppColors.error);
+        _showSnack(
+          'Submission failed: ${e.toString().replaceAll('Exception: ', '')}',
+          AppColors.error,
+        );
       }
     }
   }
@@ -141,13 +168,16 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                           color: AppColors.textPrimary, size: 20),
                       onPressed: () => Navigator.pop(context),
                     ),
-                    Text(
-                      widget.isCustom ? 'Custom Activity' : 'Add Record',
-                      style: const TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                        color: AppColors.textPrimary,
+                    Flexible(
+                      child: Text(
+                        widget.isCustom ? 'Custom Activity' : 'Add Record',
+                        style: const TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -164,7 +194,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                         TextFormField(
                           controller: _titleController,
                           style: const TextStyle(
-                              fontFamily: 'Outfit', color: AppColors.textPrimary),
+                              fontFamily: 'Outfit',
+                              color: AppColors.textPrimary),
                           decoration: const InputDecoration(
                             labelText: 'Activity Title',
                             hintText: 'What did you do?',
@@ -186,11 +217,13 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                         const SizedBox(height: 12),
                         ...(category['activities'] as List<String>)
                             .map((activity) {
-                          final isSelected = _selectedActivity == activity;
-                          final color = Color(category['color'] as int);
+                          final isSelected =
+                              _selectedActivity == activity;
+                          final color =
+                              Color(category['color'] as int);
                           return GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedActivity = activity),
+                            onTap: () => setState(
+                                () => _selectedActivity = activity),
                             child: Container(
                               margin: const EdgeInsets.only(bottom: 8),
                               padding: const EdgeInsets.symmetric(
@@ -238,7 +271,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                         }),
                         const SizedBox(height: 20),
                       ],
-                      // Media upload
+
+                      // PROOF — Multiple photos/videos
                       Text(
                         'PROOF (REQUIRED)',
                         style: TextStyle(
@@ -250,133 +284,156 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                         ),
                       ).animate().fadeIn(delay: 200.ms),
                       const SizedBox(height: 12),
-                      _mediaFile != null
-                          ? Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: _isVideo
-                                      ? Container(
-                                          height: 200,
-                                          color: AppColors.glassWhite,
-                                          child: const Center(
-                                            child: Icon(Icons.play_circle,
-                                                color: AppColors.textPrimary,
-                                                size: 48),
-                                          ),
-                                        )
-                                      : kIsWeb
-                                          ? Image.network(
-                                              _mediaFile!.path,
-                                              height: 200,
-                                              width: double.infinity,
-                                              fit: BoxFit.cover,
-                                            )
-                                          : Image.file(
-                                              File(_mediaFile!.path),
-                                              height: 200,
-                                              width: double.infinity,
-                                              fit: BoxFit.cover,
+
+                      // Media grid
+                      if (_mediaFiles.isNotEmpty) ...[
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            ..._mediaFiles.asMap().entries.map((entry) {
+                              final i = entry.key;
+                              final file = entry.value;
+                              final isVideo = _isVideoFlags[i];
+                              return Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: isVideo
+                                        ? Container(
+                                            width: 90,
+                                            height: 90,
+                                            color: AppColors.glassWhite,
+                                            child: const Center(
+                                              child: Icon(
+                                                  Icons.play_circle,
+                                                  color: AppColors
+                                                      .textPrimary,
+                                                  size: 36),
                                             ),
-                                ),
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: GestureDetector(
-                                    onTap: () =>
-                                        setState(() => _mediaFile = null),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: AppColors.error,
+                                          )
+                                        : kIsWeb
+                                            ? Image.network(
+                                                file.path,
+                                                width: 90,
+                                                height: 90,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : Image.file(
+                                                File(file.path),
+                                                width: 90,
+                                                height: 90,
+                                                fit: BoxFit.cover,
+                                              ),
+                                  ),
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: GestureDetector(
+                                      onTap: () => _removeMedia(i),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: AppColors.error,
+                                        ),
+                                        child: const Icon(Icons.close,
+                                            color: Colors.white, size: 12),
                                       ),
-                                      child: const Icon(Icons.close,
-                                          color: Colors.white, size: 14),
                                     ),
                                   ),
-                                ),
-                              ],
-                            )
-                          : Row(
-                              children: [
-                                Expanded(
-                                  child: GlassCard(
-                                    onTap: () => _pickMedia(),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 20),
-                                    child: Column(
-                                      children: [
-                                        const Icon(Icons.image_outlined,
-                                            color: AppColors.nebulaBlue,
-                                            size: 28),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          'Photo',
-                                          style: TextStyle(
-                                            fontFamily: 'Outfit',
-                                            fontSize: 12,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
+                                ],
+                              );
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
+                      // Add more media buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GlassCard(
+                              onTap: () => _pickMedia(),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 18),
+                              child: Column(
+                                children: [
+                                  const Icon(Icons.add_photo_alternate_outlined,
+                                      color: AppColors.oliveGreen, size: 26),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _mediaFiles.isEmpty
+                                        ? 'Add Photo'
+                                        : 'Add More',
+                                    style: TextStyle(
+                                      fontFamily: 'Outfit',
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: GlassCard(
-                                    onTap: () => _pickMedia(video: true),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 20),
-                                    child: Column(
-                                      children: [
-                                        const Icon(Icons.videocam_outlined,
-                                            color: AppColors.cosmicPurple,
-                                            size: 28),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          'Video',
-                                          style: TextStyle(
-                                            fontFamily: 'Outfit',
-                                            fontSize: 12,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: GlassCard(
+                              onTap: () => _pickMedia(video: true),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 18),
+                              child: Column(
+                                children: [
+                                  const Icon(Icons.videocam_outlined,
+                                      color: AppColors.tealBlue, size: 26),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Add Video',
+                                    style: TextStyle(
+                                      fontFamily: 'Outfit',
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ).animate().fadeIn(delay: 300.ms),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ).animate().fadeIn(delay: 300.ms),
                       const SizedBox(height: 20),
+
                       TextFormField(
                         controller: _descController,
                         maxLines: 4,
                         style: const TextStyle(
-                            fontFamily: 'Outfit', color: AppColors.textPrimary),
+                            fontFamily: 'Outfit',
+                            color: AppColors.textPrimary),
                         decoration: const InputDecoration(
                           labelText: 'Describe your activity *',
                           hintText: 'Tell the cosmos what you did...',
                           alignLabelWithHint: true,
                         ),
                       ).animate().fadeIn(delay: 400.ms),
+
                       const SizedBox(height: 16),
                       if (widget.isCustom)
                         GlassCard(
                           padding: const EdgeInsets.all(14),
-                          borderColor: AppColors.stardustGold.withOpacity(0.3),
+                          borderColor:
+                              AppColors.cream.withOpacity(0.3),
                           child: Row(
                             children: [
-                              const Text('⭐',
-                                  style: TextStyle(fontSize: 18)),
+                              const Icon(Icons.star,
+                                  color: AppColors.cream, size: 18),
                               const SizedBox(width: 10),
                               Text(
                                 'Custom activities earn extra stardust!',
                                 style: TextStyle(
                                   fontFamily: 'Outfit',
                                   fontSize: 13,
-                                  color: AppColors.stardustGold,
+                                  color: AppColors.cream,
                                 ),
                               ),
                             ],
@@ -388,7 +445,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                       _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : GlassButton(
-                              text: 'Submit & Earn Stardust ✨',
+                              text: 'Submit for Verification',
                               onTap: _submit,
                             ).animate().fadeIn(delay: 600.ms),
                       const SizedBox(height: 40),

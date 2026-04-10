@@ -15,22 +15,22 @@ class RegisterTypeScreen extends StatelessWidget {
         'type': 'individual',
         'title': 'Individual',
         'subtitle': 'A solo cosmic explorer',
-        'icon': '🌟',
-        'color': AppColors.cosmicGreen,
+        'iconData': Icons.star,
+        'color': AppColors.oliveGreen,
       },
       {
         'type': 'student_employee',
         'title': 'Student / Employee',
         'subtitle': 'Part of an institution or org',
-        'icon': '🎓',
-        'color': AppColors.nebulaBlue,
+        'iconData': Icons.star,          // changed from graduation cap emoji
+        'color': AppColors.tealBlue,
       },
       {
         'type': 'college_org',
         'title': 'College / Organisation',
         'subtitle': 'Lead a constellation of change',
-        'icon': '🏛️',
-        'color': AppColors.cosmicPurple,
+        'iconData': Icons.star,
+        'color': AppColors.dustyRose,
       },
     ];
 
@@ -44,7 +44,8 @@ class RegisterTypeScreen extends StatelessWidget {
               children: [
                 const SizedBox(height: 24),
                 IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 20),
+                  icon: const Icon(Icons.arrow_back_ios,
+                      color: AppColors.textPrimary, size: 20),
                   onPressed: () => Navigator.pop(context),
                 ),
                 const SizedBox(height: 24),
@@ -72,6 +73,7 @@ class RegisterTypeScreen extends StatelessWidget {
                   final i = entry.key;
                   final t = entry.value;
                   final color = t['color'] as Color;
+                  final iconData = t['iconData'] as IconData;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: GlassCard(
@@ -84,7 +86,7 @@ class RegisterTypeScreen extends StatelessWidget {
                         ),
                       ),
                       padding: const EdgeInsets.all(24),
-                      borderColor: color.withOpacity(0.3),
+                      borderColor: color.withOpacity(0.4),
                       child: Row(
                         children: [
                           Container(
@@ -98,9 +100,10 @@ class RegisterTypeScreen extends StatelessWidget {
                               ),
                             ),
                             child: Center(
-                              child: Text(
-                                t['icon'] as String,
-                                style: const TextStyle(fontSize: 24),
+                              child: Icon(
+                                iconData,
+                                color: color,
+                                size: 26,
                               ),
                             ),
                           ),
@@ -139,7 +142,8 @@ class RegisterTypeScreen extends StatelessWidget {
                       ),
                     )
                         .animate()
-                        .fadeIn(delay: Duration(milliseconds: 300 + i * 120))
+                        .fadeIn(
+                            delay: Duration(milliseconds: 300 + i * 120))
                         .slideX(begin: 0.1, end: 0),
                   );
                 }),
