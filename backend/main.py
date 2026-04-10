@@ -19,7 +19,12 @@ if not firebase_admin._apps:
             raise RuntimeError(
                 "Firebase credentials missing! Set FIREBASE_CREDENTIALS_JSON env var on Render."
             )
-        cred = credentials.Certificate(json.loads(cred_json))
+        cred_dict = json.loads(cred_json)
+        # Fix escaped newlines in private_key (common issue when pasting JSON into Render Env Vars)
+        if "private_key" in cred_dict:
+            cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+            
+        cred = credentials.Certificate(cred_dict)
 
     project_id = os.getenv("PROJECT_ID", "ecotrack-hackathon")
     firebase_admin.initialize_app(cred, {
