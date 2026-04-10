@@ -7,7 +7,7 @@ router = APIRouter()
 
 class ChatRequest(BaseModel):
     query: str
-    history: list = []   # list of {"role": "user"|"assistant", "content": "..."}
+    history: list = []   
 
 
 @router.post("/message")

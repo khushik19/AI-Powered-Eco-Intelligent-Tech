@@ -12,7 +12,7 @@ router = APIRouter()
 class SubmissionRequest(BaseModel):
     userId: str
     collegeId: str
-    role: str           # "student" or "college"
+    role: str           
     imageBase64: str
     description: str
     isPredefined: bool = False
@@ -22,13 +22,10 @@ class SubmissionRequest(BaseModel):
 @router.post("/submit")
 async def submit_action(req: SubmissionRequest):
     try:
-        # Step 1: Send image + description to AI, get back impact data
         result = classify_with_openrouter(req.imageBase64, req.description)
 
-        # Step 2: Upload the image to Firebase Storage, get a URL back
         image_url = upload_image(req.imageBase64, f"submissions/{req.collegeId}")
 
-        # Step 3: Build the full document to save in Firestore
         submission = {
             "userId": req.userId,
             "collegeId": req.collegeId,
@@ -49,7 +46,6 @@ async def submit_action(req: SubmissionRequest):
             "createdAt": datetime.utcnow().isoformat()
         }
 
-        # Step 4: Save to Firestore and update points
         submission_id = save_submission(submission)
         update_points(req.userId, req.collegeId, result["stardustAwarded"], result)
 

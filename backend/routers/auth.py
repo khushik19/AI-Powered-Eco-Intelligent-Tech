@@ -8,15 +8,15 @@ db = firestore.client()
 
 
 class RegisterRequest(BaseModel):
-    uid: str                    # Firebase UID (from Flutter after Firebase auth)
+    uid: str                    
     name: str
     email: str = ""
     phone: str = ""
     city: str
     state: str
     country: str
-    role: str                   # "individual" | "student" | "college"
-    institutionName: str = ""   # for student/employee
+    role: str                   
+    institutionName: str = ""   
     profilePhotoUrl: str = ""
 
 
@@ -44,10 +44,8 @@ def register_user(req: RegisterRequest):
             "createdAt": datetime.utcnow().isoformat()
         }
 
-        # Use Firebase UID as the document ID so it always matches auth
         db.collection("users").document(req.uid).set(user_data)
 
-        # If it's a college/org, also create a colleges document
         if req.role == "college":
             db.collection("colleges").document(req.uid).set({
                 "name": req.name,

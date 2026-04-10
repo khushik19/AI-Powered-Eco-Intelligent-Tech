@@ -11,7 +11,7 @@ OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash-lite")
 HEADERS = {
     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
     "Content-Type": "application/json",
-    "HTTP-Referer": "https://cleancosmos.app",   # can be anything
+    "HTTP-Referer": "https://cleancosmos.app",   
     "X-Title": "Clean Cosmos"
 }
 
@@ -39,9 +39,8 @@ Analyze the image and the description carefully. Return ONLY valid JSON with no 
 
 Base your estimates on real environmental benchmarks. Be generous but realistic with stardust points."""
 
-    # OpenRouter supports vision via base64 images in the message content
     payload = {
-        "model": "google/gemini-pro-vision",   # use vision model for images
+        "model": "google/gemini-pro-vision",   
         "messages": [
             {
                 "role": "user",
@@ -69,7 +68,6 @@ Base your estimates on real environmental benchmarks. Be generous but realistic 
     )
     response.raise_for_status()
     text = response.json()["choices"][0]["message"]["content"].strip()
-    # Strip markdown fences if the model adds them anyway
     text = text.replace("```json", "").replace("```", "").strip()
     return json.loads(text)
 
@@ -78,9 +76,9 @@ Base your estimates on real environmental benchmarks. Be generous but realistic 
 def chat_with_openrouter(query: str, history: list) -> str:
     system_message = {
         "role": "system",
-        "content": """You are BlahBlahBleh, the sustainability assistant for Clean Cosmos — 
+        "content": """You are Nebula, the sustainability chatbot assistant for Clean Cosmos — 
 an app that rewards students and institutions for sustainable actions with "stardust" points.
-You help users with: recycling methods, energy saving tips, composting guides, e-waste disposal, 
+You help users with: recycling methods, energy saving tips, composting guides, e-waste disposal, a
 water conservation, sustainable campus practices, and how to earn more stardust points.
 Always be concise, factual, practical, and encouraging while also being fun. 
 Suggest specific actionable steps. When relevant, mention how the action could earn stardust points."""

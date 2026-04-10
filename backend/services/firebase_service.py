@@ -4,9 +4,6 @@ import uuid
 
 db = firestore.client()
 
-
-# ── Submissions ───────────────────────────────────────────────────────────────
-
 def save_submission(data: dict) -> str:
     """Save a new eco-action submission. Returns the new document ID."""
     ref = db.collection("submissions").add(data)
@@ -19,14 +16,12 @@ def update_points(user_id: str, college_id: str, stardust: int, impact: dict):
     Also updates cumulative impact numbers (CO2, energy, water, e-waste).
     Then updates the user's streak and the college's accreditation tier.
     """
-    # Update the student's personal points
     db.collection("users").document(user_id).update({
         "stardust": firestore.Increment(stardust),
         "totalActions": firestore.Increment(1),
         "lastActionDate": datetime.utcnow().isoformat()
     })
 
-    # Update the college's aggregate stats
     db.collection("colleges").document(college_id).update({
         "totalStardust": firestore.Increment(stardust),
         "accreditationScore": firestore.Increment(stardust // 10),
@@ -81,13 +76,11 @@ def _update_accreditation_tier(college_id: str):
         elif score >= 100:
             tier = "silver"
         else:
-            tier = "seedling"   # ode to Clean Cosmos theme
+            tier = "seedling"   
         db.collection("colleges").document(college_id).update({"accreditationTier": tier})
     except Exception as e:
         print(f"Tier update failed: {e}")
 
-
-# ── Leaderboard ───────────────────────────────────────────────────────────────
 
 def get_leaderboard(limit: int = 20, city: str = None, state: str = None):
     """
@@ -117,7 +110,6 @@ def get_individual_leaderboard(limit: int = 50, college_id: str = None,
     return [{"id": u.id, **u.to_dict()} for u in docs]
 
 
-# ── Dashboard data ────────────────────────────────────────────────────────────
 
 def get_college_dashboard(college_id: str) -> dict:
     """
@@ -130,8 +122,8 @@ def get_college_dashboard(college_id: str) -> dict:
     college = db.collection("colleges").document(college_id).get().to_dict()
     submissions = db.collection("submissions").where("collegeId", "==", college_id).stream()
 
-    monthly_co2 = {}       # {"2025-01": 120.5, "2025-02": 340.0}
-    action_types = {}      # {"solar": 3, "recycling": 8, "transport": 12}
+    monthly_co2 = {}       
+    action_types = {}     
 
     for s in submissions:
         d = s.to_dict()
@@ -165,8 +157,6 @@ def get_student_dashboard(user_id: str) -> dict:
     }
 
 
-# ── Image upload ──────────────────────────────────────────────────────────────
-
 def upload_image(image_base64: str, folder: str) -> str:
     """
     Uploads a base64-encoded image to Firebase Storage.
@@ -180,8 +170,6 @@ def upload_image(image_base64: str, folder: str) -> str:
     blob.make_public()
     return blob.public_url
 
-
-# ── Predefined actions ────────────────────────────────────────────────────────
 
 def get_predefined_actions(role: str = None):
     """
@@ -197,8 +185,6 @@ def get_predefined_actions(role: str = None):
     return result
 
 
-# ── Challenges ────────────────────────────────────────────────────────────────
-
 def create_challenge(data: dict) -> str:
     ref = db.collection("challenges").add(data)
     return ref[1].id
@@ -209,8 +195,6 @@ def get_challenges(college_id: str):
     docs = db.collection("challenges").where("isActive", "==", True).stream()
     return [{"id": d.id, **d.to_dict()} for d in docs]
 
-
-# ── Suggestions ───────────────────────────────────────────────────────────────
 
 def save_suggestion(data: dict) -> str:
     ref = db.collection("suggestions").add(data)

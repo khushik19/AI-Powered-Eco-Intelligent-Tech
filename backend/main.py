@@ -8,13 +8,11 @@ from routers import submissions, chatbot, challenges, leaderboard, dashboard, su
 
 load_dotenv()
 
-# Initialize Firebase with your service account key
 cred = credentials.Certificate(os.getenv("FIREBASE_CREDENTIALS_PATH"))
 firebase_admin.initialize_app(cred, {
     "storageBucket": f"{os.getenv('PROJECT_ID')}.appspot.com"
 })
 
-# Import routers AFTER firebase_admin.initialize_app
 from routers import submissions, chatbot, challenges, leaderboard, dashboard, suggestions
 
 app = FastAPI(title="Clean Cosmos API")
@@ -37,4 +35,4 @@ app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 
 @app.get("/")
 def root():
-    return {"status": "Clean Cosmos API is running 🌌"}
+    return {"status": "Clean Cosmos API is running"}
