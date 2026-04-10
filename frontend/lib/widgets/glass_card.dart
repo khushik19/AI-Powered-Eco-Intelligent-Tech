@@ -1,37 +1,44 @@
+// glass_card.dart — wraps LiquidGlassCard so all existing screens
+// automatically get the iOS 26 liquid glass effect with zero import changes.
+export 'liquid_glass_card.dart' show LiquidGlassCard, LiquidGlassButton;
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
+import 'liquid_glass_card.dart';
 
-/// iOS 26 / visionOS-style Liquid Glass card.
-/// Layered blur + refraction noise + specular rim + inner glow
-/// to achieve the "metallic liquid" look from image reference.
-class LiquidGlassCard extends StatelessWidget {
+class GlassCard extends StatelessWidget {
   final Widget child;
   final double borderRadius;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
-  final Color? tintColor;
+  final double blurStrength;
+  final Color? borderColor;
+  final Color? fillColor;
   final VoidCallback? onTap;
   final double? width;
   final double? height;
-  final double blurStrength;
+  final Gradient? gradient;
 
-  const LiquidGlassCard({
+  const GlassCard({
     super.key,
     required this.child,
-    this.borderRadius = 26,
+    this.borderRadius = 22,
     this.padding,
     this.margin,
-    this.tintColor,
+    this.blurStrength = 28,
+    this.borderColor,
+    this.fillColor,
     this.onTap,
     this.width,
     this.height,
-    this.blurStrength = 28,
+    this.gradient,
   });
 
   @override
   Widget build(BuildContext context) {
-    final tint = tintColor ?? AppColors.electricCyan;
+    final tint =
+        fillColor ?? borderColor?.withOpacity(1.0) ?? AppColors.electricCyan;
 
     return GestureDetector(
       onTap: onTap,
@@ -41,19 +48,12 @@ class LiquidGlassCard extends StatelessWidget {
         margin: margin,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(borderRadius),
-          // Outer glow — the "liquid" halo
           boxShadow: [
             BoxShadow(
-              color: tint.withOpacity(0.18),
-              blurRadius: 32,
+              color: tint.withOpacity(0.12),
+              blurRadius: 28,
               spreadRadius: -4,
-              offset: const Offset(0, 8),
-            ),
-            BoxShadow(
-              color: AppColors.neonMoss.withOpacity(0.08),
-              blurRadius: 60,
-              spreadRadius: -8,
-              offset: const Offset(0, 16),
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -61,58 +61,53 @@ class LiquidGlassCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(borderRadius),
           child: Stack(
             children: [
-              // ── Layer 1: Heavy backdrop blur (frosted glass base) ──────────
+              // Heavy backdrop blur
               BackdropFilter(
                 filter: ImageFilter.blur(
-                  sigmaX: blurStrength,
-                  sigmaY: blurStrength,
-                ),
+                    sigmaX: blurStrength, sigmaY: blurStrength),
                 child: Container(color: Colors.transparent),
               ),
-
-              // ── Layer 2: Dark tinted fill (midnight black base) ────────────
+              // Dark tinted fill
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(borderRadius),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.midnightBlack.withOpacity(0.72),
-                      AppColors.midnightBlack.withOpacity(0.55),
-                      tint.withOpacity(0.06),
-                    ],
-                    stops: const [0.0, 0.65, 1.0],
-                  ),
+                  gradient: gradient ??
+                      LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.midnightBlack.withOpacity(0.70),
+                          AppColors.midnightBlack.withOpacity(0.50),
+                          tint.withOpacity(0.07),
+                        ],
+                        stops: const [0.0, 0.65, 1.0],
+                      ),
                 ),
               ),
-
-              // ── Layer 3: Specular top-left shine (the "glass" sheen) ───────
+              // Specular highlight
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
                 child: Container(
-                  height: borderRadius * 1.5,
+                  height: borderRadius * 1.4,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(borderRadius),
-                    ),
+                        top: Radius.circular(borderRadius)),
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.white.withOpacity(0.28),
-                        Colors.white.withOpacity(0.06),
+                        Colors.white.withOpacity(0.26),
+                        Colors.white.withOpacity(0.05),
                         Colors.transparent,
                       ],
-                      stops: const [0.0, 0.4, 1.0],
+                      stops: const [0.0, 0.45, 1.0],
                     ),
                   ),
                 ),
               ),
-
-              // ── Layer 4: Left-edge rim light (liquid glass side glow) ──────
+              // Left edge rim
               Positioned(
                 top: 0,
                 left: 0,
@@ -121,14 +116,13 @@ class LiquidGlassCard extends StatelessWidget {
                   width: 1.5,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.horizontal(
-                      left: Radius.circular(borderRadius),
-                    ),
+                        left: Radius.circular(borderRadius)),
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.white.withOpacity(0.45),
-                        Colors.white.withOpacity(0.05),
+                        Colors.white.withOpacity(0.40),
+                        Colors.white.withOpacity(0.04),
                         Colors.transparent,
                       ],
                       stops: const [0.0, 0.5, 1.0],
@@ -136,42 +130,37 @@ class LiquidGlassCard extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // ── Layer 5: Outer border (glass edge) ────────────────────────
+              // Border
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(borderRadius),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.14),
-                    width: 1.2,
+                    color: borderColor ?? Colors.white.withOpacity(0.13),
+                    width: 1.0,
                   ),
                 ),
               ),
-
-              // ── Layer 6: Bottom depth shadow (inner depth illusion) ────────
+              // Bottom depth shadow
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
                 child: Container(
-                  height: borderRadius * 1.2,
+                  height: borderRadius,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(borderRadius),
-                    ),
+                        bottom: Radius.circular(borderRadius)),
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.22),
+                        Colors.black.withOpacity(0.20),
                       ],
                     ),
                   ),
                 ),
               ),
-
-              // ── Content ───────────────────────────────────────────────────
               Container(
                 padding: padding ?? const EdgeInsets.all(20),
                 child: child,
@@ -184,8 +173,8 @@ class LiquidGlassCard extends StatelessWidget {
   }
 }
 
-/// Liquid Glass Button — pill-shaped with neon glow press effect
-class LiquidGlassButton extends StatefulWidget {
+// GlassButton — uses new palette; primary buttons glow neon
+class GlassButton extends StatefulWidget {
   final String text;
   final VoidCallback onTap;
   final Color? color;
@@ -193,7 +182,7 @@ class LiquidGlassButton extends StatefulWidget {
   final double width;
   final IconData? icon;
 
-  const LiquidGlassButton({
+  const GlassButton({
     super.key,
     required this.text,
     required this.onTap,
@@ -204,10 +193,10 @@ class LiquidGlassButton extends StatefulWidget {
   });
 
   @override
-  State<LiquidGlassButton> createState() => _LiquidGlassButtonState();
+  State<GlassButton> createState() => _GlassButtonState();
 }
 
-class _LiquidGlassButtonState extends State<LiquidGlassButton>
+class _GlassButtonState extends State<GlassButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -233,7 +222,9 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton>
   @override
   Widget build(BuildContext context) {
     final color = widget.color ?? AppColors.electricCyan;
-    final labelColor = widget.isOutline ? color : AppColors.midnightBlack;
+    // For filled buttons on the new palette, label is dark (midnight black)
+    final labelColor =
+        widget.isOutline ? color : AppColors.midnightBlack;
 
     return GestureDetector(
       onTapDown: (_) => _controller.forward(),
@@ -254,7 +245,7 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton>
                 : [
                     BoxShadow(
                       color: color.withOpacity(0.35),
-                      blurRadius: 20,
+                      blurRadius: 22,
                       spreadRadius: -4,
                       offset: const Offset(0, 6),
                     ),
@@ -264,28 +255,26 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton>
             borderRadius: BorderRadius.circular(18),
             child: Stack(
               children: [
-                // Blur base
                 BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                   child: Container(color: Colors.transparent),
                 ),
-                // Gradient fill
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
                     gradient: widget.isOutline
                         ? LinearGradient(
                             colors: [
-                              AppColors.midnightBlack.withOpacity(0.6),
-                              AppColors.midnightBlack.withOpacity(0.4),
+                              AppColors.midnightBlack.withOpacity(0.55),
+                              AppColors.midnightBlack.withOpacity(0.38),
                             ],
                           )
                         : LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              color.withOpacity(0.90),
-                              color.withOpacity(0.65),
+                              color.withOpacity(0.92),
+                              color.withOpacity(0.68),
                             ],
                           ),
                     border: Border.all(
@@ -296,7 +285,6 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton>
                     ),
                   ),
                 ),
-                // Specular top highlight
                 Positioned(
                   top: 0,
                   left: 0,
@@ -315,7 +303,6 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton>
                     ),
                   ),
                 ),
-                // Label
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
