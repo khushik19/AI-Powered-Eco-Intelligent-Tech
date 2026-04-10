@@ -107,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     colors: [Colors.white, AppColors.nebulaBlue],
                   ).createShader(b),
                   child: const Text(
-                    'Welcome\nBack, Star ✨',
+                    'Welcome\nBack, Star',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontSize: 36,
