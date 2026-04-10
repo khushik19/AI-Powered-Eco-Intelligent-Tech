@@ -36,6 +36,15 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
   static const _periodLabels = ['Weekly', 'Monthly', 'Yearly'];
   static const _periodKeys = ['weekly', 'monthly', 'yearly'];
 
+  // Line chart metric selector
+  String _selectedMetric = 'co2';
+  static const _metricMeta = {
+    'co2':     {'label': 'CO₂ (kg)',    'color': AppColors.cosmicGreen},
+    'energy':  {'label': 'Energy (kWh)','color': AppColors.stardustGold},
+    'water':   {'label': 'Water (L)',   'color': AppColors.nebulaBlue},
+    'actions': {'label': 'Actions',     'color': AppColors.cosmicPurple},
+  };
+
   @override
   void initState() {
     super.initState();
@@ -196,6 +205,19 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
           _buildNarrativeCard(narrative)
               .animate()
               .fadeIn(delay: 400.ms),
+          const SizedBox(height: 24),
+
+          // ── chartSeries Line Chart ────────────────────────────────────
+          _sectionTitle('IMPACT TREND'),
+          const SizedBox(height: 8),
+          _buildMetricToggle()
+              .animate()
+              .fadeIn(delay: 450.ms),
+          const SizedBox(height: 8),
+          _buildLineChart(report)
+              .animate()
+              .fadeIn(delay: 480.ms)
+              .slideY(begin: 0.05, end: 0),
           const SizedBox(height: 24),
 
           // ── Blind spots ──────────────────────────────────────────────
@@ -548,6 +570,194 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
     );
   }
 
+  // ── Metric toggle for line chart ────────────────────────────────────────
+
+  Widget _buildMetricToggle() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _metricMeta.entries.map((entry) {
+          final selected = _selectedMetric == entry.key;
+          final color = entry.value['color'] as Color;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedMetric = entry.key),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(right: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: selected
+                    ? color.withValues(alpha: 0.15)
+                    : Colors.transparent,
+                border: Border.all(
+                  color: selected
+                      ? color.withValues(alpha: 0.6)
+                      : AppColors.glassBorder,
+                ),
+              ),
+              child: Text(
+                entry.value['label'] as String,
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? color : AppColors.textMuted,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ── Line chart using chartSeries ─────────────────────────────────────────
+
+  Widget _buildLineChart(Map<String, dynamic> report) {
+    final chartSeries =
+        report['chartSeries'] as Map<String, dynamic>? ?? {};
+    final periodData =
+        chartSeries[_periodKeys[_timePeriod]] as Map<String, dynamic>? ?? {};
+
+    final labels = (periodData['labels'] as List<dynamic>? ?? [])
+        .cast<String>();
+    final rawValues = (periodData[_selectedMetric] as List<dynamic>? ?? []);
+    final values = rawValues.map((v) => (v as num).toDouble()).toList();
+
+    if (labels.isEmpty || values.isEmpty) {
+      return _buildEmptyChart('No trend data for this period');
+    }
+
+    final color = _metricMeta[_selectedMetric]!['color'] as Color;
+    final spots = values.asMap().entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value))
+        .toList();
+    final maxVal = values.fold<double>(0, max);
+    final yMax = maxVal == 0 ? 1.0 : maxVal * 1.25;
+
+    return LiquidGlassCard(
+      padding: const EdgeInsets.fromLTRB(8, 20, 16, 8),
+      borderColor: color.withValues(alpha: 0.2),
+      child: SizedBox(
+        height: 220,
+        child: LineChart(
+          LineChartData(
+            minY: 0,
+            maxY: yMax,
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              getDrawingHorizontalLine: (value) => FlLine(
+                color: AppColors.glassBorder,
+                strokeWidth: 0.5,
+              ),
+            ),
+            borderData: FlBorderData(show: false),
+            titlesData: FlTitlesData(
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 36,
+                  getTitlesWidget: (value, meta) => Text(
+                    _fmt(value),
+                    style: const TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 9,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 28,
+                  interval: labels.length > 6
+                      ? (labels.length / 4).ceilToDouble()
+                      : 1,
+                  getTitlesWidget: (value, meta) {
+                    final idx = value.toInt();
+                    if (idx < 0 || idx >= labels.length) {
+                      return const SizedBox.shrink();
+                    }
+                    final raw = labels[idx];
+                    final short = raw.length > 6 ? raw.substring(0, 6) : raw;
+                    return SideTitleWidget(
+                      axisSide: meta.axisSide,
+                      child: Text(
+                        short,
+                        style: const TextStyle(
+                          fontFamily: 'Outfit',
+                          fontSize: 9,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false)),
+            ),
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots,
+                isCurved: true,
+                color: color,
+                barWidth: 2.5,
+                isStrokeCapRound: true,
+                dotData: FlDotData(
+                  show: spots.length <= 12,
+                  getDotPainter: (spot, percent, bar, index) =>
+                      FlDotCirclePainter(
+                    radius: 4,
+                    color: color,
+                    strokeWidth: 1.5,
+                    strokeColor: AppColors.backgroundPrimary,
+                  ),
+                ),
+                belowBarData: BarAreaData(
+                  show: true,
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withValues(alpha: 0.25),
+                      color.withValues(alpha: 0.0),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ],
+            lineTouchData: LineTouchData(
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipItems: (touchedSpots) =>
+                    touchedSpots.map((spot) {
+                  final idx = spot.x.toInt();
+                  final label =
+                      idx < labels.length ? labels[idx] : '';
+                  return LineTooltipItem(
+                    '$label\n${_fmt(spot.y)}',
+                    TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 11,
+                      color: color,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── Narrative card ──────────────────────────────────────────────────────
 
   Widget _buildNarrativeCard(String narrative) {
@@ -635,15 +845,21 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: AppColors.stardustGold.withValues(alpha: 0.15),
+                    color: spot['severity'] == 'blind'
+                        ? AppColors.reefCoral.withValues(alpha: 0.15)
+                        : AppColors.stardustGold.withValues(alpha: 0.15),
                   ),
-                  child: const Text(
-                    'Not explored',
+                  child: Text(
+                    spot['severity'] == 'blind'
+                        ? '🔴 0 actions logged'
+                        : '🟡 ${(spot['coveragePct'] as num?)?.toInt() ?? 0}% coverage',
                     style: TextStyle(
                       fontFamily: 'Outfit',
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.stardustGold,
+                      color: spot['severity'] == 'blind'
+                          ? AppColors.reefCoral
+                          : AppColors.stardustGold,
                     ),
                   ),
                 ),

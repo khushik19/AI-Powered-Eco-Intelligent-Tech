@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import '../widgets/cosmic_background.dart';
-import '../widgets/glass_card.dart';
 import 'auth/login_screen.dart';
 import 'auth/register_type_screen.dart';
 
@@ -111,25 +110,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 40),
-                  // Features teaser
-                  GlassCard(
-                    child: Column(
-                      children: [
-                        _buildFeatureRow(
-                            Icons.eco, 'Log Eco-Actions', AppColors.bioTeal),
-                        const Divider(color: Colors.white10),
-                        _buildFeatureRow(Icons.bar_chart,
-                            'Impact Reports and Scores', AppColors.cosmicGreen),
-                        const Divider(color: Colors.white10),
-                        _buildFeatureRow(Icons.leaderboard_outlined,
-                            'Leaderboard and Challenges', AppColors.seaFoam),
-                        const Divider(color: Colors.white10),
-                        _buildFeatureRow(Icons.auto_awesome,
-                            'Nebula AI Assistant', AppColors.stardustGold),
-                      ],
-                    ),
-                  ),
                   const Spacer(flex: 3),
                   // Primary CTA — Register
                   SizedBox(
@@ -193,25 +173,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureRow(IconData icon, String label, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-                fontFamily: 'Outfit'),
-          ),
-        ],
       ),
     );
   }
