@@ -19,9 +19,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Default to a stable, always-available free model on OpenRouter.
-# Override with OPENROUTER_MODEL env var on the Render dashboard.
-_DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+# Default model — override with OPENROUTER_MODEL env var on Render dashboard.
+_DEFAULT_MODEL = "google/gemini-2.5-flash-lite"
 
 
 def _get_model() -> str:
