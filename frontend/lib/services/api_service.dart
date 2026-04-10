@@ -276,4 +276,29 @@ class ApiService {
       'realWorldEquivalent': realWorld,
     };
   }
+
+  // ─── Impact Reports ──────────────────────────────────────────────────────
+
+  /// Fetches the individual/student impact report from the backend.
+  /// Returns aggregated weekly/monthly/yearly data, charts, blind spots,
+  /// and a narrative text report.
+  Future<Map<String, dynamic>> getImpactReport(String userId) async {
+    final res = await http.get(
+      Uri.parse('$_baseUrl/dashboard/impact-report/$userId'),
+      headers: _headers,
+    ).timeout(const Duration(seconds: 15));
+    _assertOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// Fetches the college/org impact report from the backend.
+  /// Aggregates all submissions from students belonging to the college.
+  Future<Map<String, dynamic>> getCollegeImpactReport(String collegeId) async {
+    final res = await http.get(
+      Uri.parse('$_baseUrl/dashboard/impact-report/college/$collegeId'),
+      headers: _headers,
+    ).timeout(const Duration(seconds: 15));
+    _assertOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
 }
