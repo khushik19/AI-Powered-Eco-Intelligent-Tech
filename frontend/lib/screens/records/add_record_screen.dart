@@ -538,10 +538,33 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                       const LoadingFactWidget(),
                       const SizedBox(height: 24),
                       _isLoading
+<<<<<<< HEAD
+                          ? Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircularProgressIndicator(
+                                    color: AppColors.bioTeal),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'AI is reviewing your submission...\nThis takes 5–20 seconds',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Outfit',
+                                    fontSize: 13,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : GlassButton(
+                              text: 'Submit for Verification',
+                              onTap: _submit,
+=======
                           ? const Center(child: CircularProgressIndicator())
                           : ElevatedButton(
                               onPressed: _submit,
                               child: const Text('Submit for Verification'),
+>>>>>>> 5a3dcc0562b66e25c69e587a381fe538f60b7cde
                             ).animate().fadeIn(delay: 600.ms),
                       const SizedBox(height: 40),
                     ],
