@@ -16,10 +16,6 @@ HEADERS = {
 }
 
 
-# ── 1. Vision model: classify image + quantify impact ─────────────────────────
-# This is called when a user submits a photo of their eco-action.
-# It sends the image + description to the AI and gets back structured data
-# (action type, stardust points, CO2 saved, etc.)
 
 def classify_with_openrouter(image_base64: str, description: str) -> dict:
     prompt = f"""You are an eco-action classifier for a sustainability rewards app called Clean Cosmos.
@@ -78,26 +74,23 @@ Base your estimates on real environmental benchmarks. Be generous but realistic 
     return json.loads(text)
 
 
-# ── 2. EcoGPT: sustainability chatbot ─────────────────────────────────────────
-# This is called when a user types a message in the EcoGPT chat screen.
-# history is a list of previous messages so the AI has context.
 
 def chat_with_openrouter(query: str, history: list) -> str:
     system_message = {
         "role": "system",
-        "content": """You are EcoGPT, the sustainability assistant for Clean Cosmos — 
+        "content": """You are BlahBlahBleh, the sustainability assistant for Clean Cosmos — 
 an app that rewards students and institutions for sustainable actions with "stardust" points.
 You help users with: recycling methods, energy saving tips, composting guides, e-waste disposal, 
 water conservation, sustainable campus practices, and how to earn more stardust points.
-Always be concise, factual, practical, and encouraging. 
+Always be concise, factual, practical, and encouraging while also being fun. 
 Suggest specific actionable steps. When relevant, mention how the action could earn stardust points."""
     }
 
-    # Build conversation history in the format OpenRouter expects
+    
     messages = [system_message]
     for msg in history:
         messages.append({
-            "role": msg["role"],  # "user" or "assistant"
+            "role": msg["role"],  
             "content": msg["content"]
         })
     messages.append({"role": "user", "content": query})
@@ -119,9 +112,6 @@ Suggest specific actionable steps. When relevant, mention how the action could e
     return response.json()["choices"][0]["message"]["content"]
 
 
-# ── 3. AI Recommendations for college dashboard ───────────────────────────────
-# This is called when a college loads their dashboard.
-# It looks at what they've done and suggests what they should do next.
 
 def get_recommendations(college_data: dict) -> list:
     prompt = f"""A college is using the Clean Cosmos sustainability app. Here is their current profile:
