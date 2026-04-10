@@ -16,12 +16,28 @@ class AuthService {
     required String country,
     String? institution,
   }) async {
-    final cred = await _auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    String uid;
 
-    final uid = cred.user!.uid;
+    final existingUser = _auth.currentUser;
+    final isPhoneAuthed =
+        existingUser != null && existingUser.phoneNumber != null;
+
+    if (isPhoneAuthed) {
+      // ── Phone OTP was verified — link email+password to the phone user ──
+      // This means the user can sign in with EITHER phone OTP OR email+password.
+      final emailCredential =
+          EmailAuthProvider.credential(email: email, password: password);
+      await existingUser.linkWithCredential(emailCredential);
+      uid = existingUser.uid;
+    } else {
+      // ── Fallback: create directly with email+password ───────────────────
+      final cred = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      uid = cred.user!.uid;
+    }
+
     final isOrg = role == 'college_org';
 
     await _db.collection('users').doc(uid).set({
@@ -44,11 +60,20 @@ class AuthService {
       await _db.collection('colleges').doc(uid).set({
         'name': name,
         'email': email,
+        'phone': phone,
         'city': city,
         'state': state,
         'country': country,
         'totalStardust': 0,
         'memberCount': 0,
+        // Accreditation system fields — required for tier promotions
+        'accreditationScore': 0,
+        'accreditationTier': 'seedling',
+        // Environmental impact aggregates
+        'totalCo2Kg': 0.0,
+        'totalEnergySavedKwh': 0.0,
+        'totalWaterSavedL': 0.0,
+        'totalEWasteKg': 0.0,
         'createdAt': DateTime.now().toIso8601String(),
       });
     }

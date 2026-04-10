@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../config/app_colors.dart';
+import '../../services/api_service.dart';
 import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
 import '../leaderboard/leaderboard_screen.dart';
@@ -10,8 +11,7 @@ import '../records/add_record_screen.dart';
 import '../chatbot/chatbot_screen.dart';
 import '../profile/profile_screen.dart';
 import 'meet_the_stars_screen.dart';
-
-// ... existing imports
+import 'org_dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -135,15 +135,44 @@ class _HomeScreenState extends State<HomeScreen>
   }
 }
 
-class _HomeContent extends StatelessWidget {
+class _HomeContent extends StatefulWidget {
   final Map<String, dynamic> userData;
   final VoidCallback onRecordTap;
 
   const _HomeContent({required this.userData, required this.onRecordTap});
 
-  String get _weeklyChallenge =>
-      'This week: Reduce single-use plastic in 3 meals. '
-      'Log each plastic-free meal to earn bonus stardust!';
+  @override
+  State<_HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<_HomeContent> {
+  Map<String, dynamic>? _challenge;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChallenge();
+  }
+
+  Future<void> _loadChallenge() async {
+    final collegeId = widget.userData['institution'] as String? ??
+        widget.userData['collegeId'] as String? ?? '';
+    try {
+      final c = await ApiService.instance.getChallenge(collegeId);
+      if (mounted) setState(() => _challenge = c);
+    } catch (_) {}
+  }
+
+  String get _challengeText {
+    if (_challenge == null) {
+      return 'This week: Reduce single-use plastic in 3 meals. '
+          'Log each plastic-free meal to earn bonus stardust!';
+    }
+    final title = _challenge!['title'] as String? ?? '';
+    final desc = _challenge!['description'] as String? ?? '';
+    final pts = _challenge!['pointReward'] as int? ?? 0;
+    return '$title${desc.isNotEmpty ? '\n$desc' : ''}${pts > 0 ? ' (+$pts stardust)' : ''}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -192,14 +221,14 @@ class _HomeContent extends StatelessWidget {
                       const Spacer(),
                       _TopBadge(
                         icon: Icons.local_fire_department,
-                        label: '${userData['weeklyStreak'] ?? 0}',
+                        label: '${widget.userData['weeklyStreak'] ?? 0}',
                         sublabel: 'streak',
                         color: AppColors.dustyRose,
                       ),
                       const SizedBox(width: 10),
                       _TopBadge(
                         icon: Icons.star,
-                        label: '${userData['stardust'] ?? 0}',
+                        label: '${widget.userData['stardust'] ?? 0}',
                         sublabel: 'stardust',
                         color: AppColors.oliveGreen,
                       ),
@@ -209,7 +238,7 @@ class _HomeContent extends StatelessWidget {
 
                   // Greeting
                   Text(
-                    'Hello, ${(userData['name'] as String? ?? 'Star').split(' ').first}',
+                    'Hello, ${(widget.userData['name'] as String? ?? 'Star').split(' ').first}',
                     style: TextStyle(
                       fontFamily: 'Outfit',
                       fontSize: 16,
@@ -224,7 +253,7 @@ class _HomeContent extends StatelessWidget {
                       end: Alignment.bottomRight,
                     ).createShader(b),
                     child: Text(
-                      '${(userData['name'] as String? ?? 'Star').split(' ').first}',
+                      '${(widget.userData['name'] as String? ?? 'Star').split(' ').first}',
                       style: const TextStyle(
                         fontFamily: 'Montserrat',
                         fontSize: 30,
@@ -236,9 +265,9 @@ class _HomeContent extends StatelessWidget {
                   ).animate().fadeIn(delay: 250.ms),
                   const SizedBox(height: 24),
 
-                  // Tell us prompt — arrow right instead of +
+                  // Tell us prompt
                   GlassCard(
-                    onTap: onRecordTap,
+                    onTap: widget.onRecordTap,
                     padding: const EdgeInsets.all(24),
                     borderColor: AppColors.oliveGreen.withOpacity(0.3),
                     gradient: LinearGradient(
@@ -285,7 +314,7 @@ class _HomeContent extends StatelessWidget {
                             color: AppColors.oliveGreen.withOpacity(0.2),
                           ),
                           child: const Icon(
-                            Icons.arrow_forward, // arrow instead of +
+                            Icons.arrow_forward,
                             color: AppColors.oliveGreen,
                             size: 24,
                           ),
@@ -298,7 +327,7 @@ class _HomeContent extends StatelessWidget {
                       .slideY(begin: 0.1, end: 0),
                   const SizedBox(height: 16),
 
-                  // Weekly challenge box
+                  // Weekly challenge box — live from backend
                   GlassCard(
                     padding: const EdgeInsets.all(20),
                     borderColor: AppColors.dustyRose.withOpacity(0.35),
@@ -334,15 +363,37 @@ class _HomeContent extends StatelessWidget {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              Text(
-                                _weeklyChallenge,
-                                style: const TextStyle(
-                                  fontFamily: 'Outfit',
-                                  fontSize: 13,
-                                  color: AppColors.textPrimary,
-                                  height: 1.5,
-                                ),
-                              ),
+                              _challenge == null
+                                  ? Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 12,
+                                          height: 12,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 1.5,
+                                            color: AppColors.dustyRose,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Loading challenge...',
+                                          style: TextStyle(
+                                            fontFamily: 'Outfit',
+                                            fontSize: 12,
+                                            color: AppColors.textMuted,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
+                                      _challengeText,
+                                      style: const TextStyle(
+                                        fontFamily: 'Outfit',
+                                        fontSize: 13,
+                                        color: AppColors.textPrimary,
+                                        height: 1.5,
+                                      ),
+                                    ),
                             ],
                           ),
                         ),
@@ -374,7 +425,7 @@ class _HomeContent extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (_) => AddRecordScreen(
-                              userData: userData,
+                              userData: widget.userData,
                               initialCategory: 'cut_waste',
                             ),
                           ),
@@ -389,7 +440,7 @@ class _HomeContent extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (_) => AddRecordScreen(
-                              userData: userData,
+                              userData: widget.userData,
                               initialCategory: 'optimize_resources',
                             ),
                           ),
@@ -404,7 +455,7 @@ class _HomeContent extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (_) => AddRecordScreen(
-                              userData: userData,
+                              userData: widget.userData,
                               initialCategory: 'lower_emissions',
                             ),
                           ),
@@ -614,21 +665,4 @@ class _BottomNavBar extends StatelessWidget {
   }
 }
 
-class OrgDashboardScreen extends StatelessWidget {
-  final Map<String, dynamic> userData;
-  const OrgDashboardScreen({super.key, required this.userData});
-
-  @override
-  Widget build(BuildContext context) {
-    return const SafeArea(
-      child: Center(
-        child: Text(
-          'Organisation Dashboard\n(Coming soon)',
-          style: TextStyle(
-              fontFamily: 'Outfit', color: AppColors.textSecondary),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-}
+// OrgDashboardScreen is now in org_dashboard_screen.dart

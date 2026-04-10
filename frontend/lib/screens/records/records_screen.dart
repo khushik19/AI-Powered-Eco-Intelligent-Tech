@@ -41,7 +41,6 @@ class _RecordsScreenState extends State<RecordsScreen> {
   void initState() {
     super.initState();
     _loadRecentActivity();
-    _loadImpactReport();
   }
 
   Future<void> _loadRecentActivity() async {
@@ -60,18 +59,6 @@ class _RecordsScreenState extends State<RecordsScreen> {
       });
     } catch (_) {
       setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _loadImpactReport() async {
-    final uid = widget.userData['uid'] as String? ?? '';
-    if (uid.isEmpty) return;
-    setState(() => _reportLoading = true);
-    try {
-      final data = await ApiService.instance.getImpactReport(uid);
-      if (mounted) setState(() { _impactReport = data; _reportLoading = false; });
-    } catch (_) {
-      if (mounted) setState(() => _reportLoading = false);
     }
   }
 
