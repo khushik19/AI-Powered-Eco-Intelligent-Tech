@@ -94,7 +94,7 @@ class ProfileScreen extends StatelessWidget {
             ).animate().fadeIn(delay: 400.ms),
             const SizedBox(height: 28),
             // Profile details
-            GlassCard(
+            LiquidGlassCard(
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
@@ -133,7 +133,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ).animate().fadeIn(delay: 500.ms),
             const SizedBox(height: 20),
-            GlassButton(
+            ElevatedButton(
               text: 'Sign Out',
               isOutline: true,
               color: AppColors.error,
@@ -169,7 +169,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GlassCard(
+      child: LiquidGlassCard(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         borderColor: color.withOpacity(0.3),
         child: Column(

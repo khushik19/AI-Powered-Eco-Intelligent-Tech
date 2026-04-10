@@ -3,8 +3,7 @@ from datetime import datetime, timedelta, timezone
 import uuid
 import asyncio
 
-db = firestore.client()
-
+db = firestore.client() 
 
 def _run(fn):
     """

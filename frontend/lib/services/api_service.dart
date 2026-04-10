@@ -127,19 +127,36 @@ class ApiService {
   }
 
   // ─── Chatbot ────────────────────────────────────────────────────────────────
+  // Routes through the Render backend which calls OpenRouter server-side.
+  // 35s timeout handles Render free-tier cold starts gracefully.
 
   Future<String> sendChatMessage(
     String query,
     List<Map<String, String>> history,
   ) async {
-    final res = await http.post(
-      Uri.parse('$_baseUrl/chatbot/message'),
-      headers: _headers,
-      body: jsonEncode({'query': query, 'history': history}),
-    );
-    _assertOk(res);
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-    return data['response'] as String;
+    debugPrint('[Chat] POST $_baseUrl/chatbot/message (history=${history.length})');
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$_baseUrl/chatbot/message'),
+            headers: _headers,
+            body: jsonEncode({'query': query, 'history': history}),
+          )
+          .timeout(const Duration(seconds: 35));
+
+      debugPrint('[Chat] status=${res.statusCode} body_len=${res.body.length}');
+
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final reply = data['response'] as String? ?? '';
+        if (reply.isNotEmpty) return reply;
+      } else {
+        debugPrint('[Chat] error body: ${res.body.substring(0, res.body.length.clamp(0, 300))}');
+      }
+    } catch (e) {
+      debugPrint('[Chat] exception: $e');
+    }
+    return "I'm having trouble reaching Nebula right now. Please try again in a moment!";
   }
 
   // ─── Submissions ────────────────────────────────────────────────────────────
@@ -317,6 +334,41 @@ class ApiService {
       debugPrint('[SUBMIT] Step 4 SKIPPED: userId is empty');
     }
 
+    // ── Step 4b: Sync college aggregate stats ─────────────────────────────────
+    // This ensures College Leaderboard shows up-to-date accreditation scores.
+    if (collegeId.isNotEmpty) {
+      debugPrint('[SUBMIT] Step 4b: Syncing college stats...');
+      try {
+        await _db.collection('colleges').doc(collegeId).update({
+          'totalStardust': FieldValue.increment(stardust),
+          'accreditationScore': FieldValue.increment(stardust ~/ 10),
+          'totalCo2Kg': FieldValue.increment(co2),
+          'totalEnergySavedKwh': FieldValue.increment(energy),
+          'totalWaterSavedL': FieldValue.increment(water),
+          'totalEWasteKg': FieldValue.increment(eWaste),
+        });
+        // Update accreditation tier based on new score
+        final collegeSnap =
+            await _db.collection('colleges').doc(collegeId).get();
+        final score =
+            (collegeSnap.data()?['accreditationScore'] as num? ?? 0).toInt();
+        final tier = score >= 500
+            ? 'platinum'
+            : score >= 200
+                ? 'gold'
+                : score >= 100
+                    ? 'silver'
+                    : 'seedling';
+        await _db
+            .collection('colleges')
+            .doc(collegeId)
+            .update({'accreditationTier': tier});
+        debugPrint('[SUBMIT] Step 4b DONE: tier=$tier score=$score');
+      } catch (e) {
+        debugPrint('[SUBMIT] Step 4b FAILED (non-fatal): $e');
+      }
+    }
+
     debugPrint('[SUBMIT] ═══════════ COMPLETE ═══════════ stardust=$stardust');
 
     return {
@@ -334,28 +386,143 @@ class ApiService {
     };
   }
 
-  // ─── Impact Reports ──────────────────────────────────────────────────────
+  // ─── College Dashboard (Backend) ────────────────────────────────────────────
+  /// Fetches full college dashboard including AI recommendations from backend.
+  /// Falls back to Firestore-direct data on failure.
+  Future<Map<String, dynamic>> getCollegeDashboardBackend(
+      String collegeId) async {
+    debugPrint('[Dashboard] GET $_baseUrl/dashboard/college/$collegeId');
+    try {
+      final res = await http
+          .get(
+            Uri.parse('$_baseUrl/dashboard/college/$collegeId'),
+            headers: _headers,
+          )
+          .timeout(const Duration(seconds: 20));
 
-  /// Fetches the individual/student impact report from the backend.
-  /// Returns aggregated weekly/monthly/yearly data, charts, blind spots,
-  /// and a narrative text report.
-  Future<Map<String, dynamic>> getImpactReport(String userId) async {
-    final res = await http.get(
-      Uri.parse('$_baseUrl/dashboard/impact-report/$userId'),
-      headers: _headers,
-    ).timeout(const Duration(seconds: 15));
-    _assertOk(res);
-    return jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        debugPrint('[Dashboard] OK — keys=${data.keys.join(",")}');
+        return data;
+      }
+      debugPrint('[Dashboard] HTTP ${res.statusCode} — using Firestore fallback');
+    } catch (e) {
+      debugPrint('[Dashboard] exception: $e — using Firestore fallback');
+    }
+    // Firestore fallback
+    return getCollegeDashboard(collegeId);
   }
 
-  /// Fetches the college/org impact report from the backend.
-  /// Aggregates all submissions from students belonging to the college.
+  // ─── Challenges ─────────────────────────────────────────────────────────────
+  /// Returns the active weekly challenge for a college (or a default).
+  Future<Map<String, dynamic>> getChallenge(String collegeId) async {
+    debugPrint('[Challenge] GET $_baseUrl/challenges/$collegeId');
+    try {
+      final res = await http
+          .get(
+            Uri.parse('$_baseUrl/challenges/$collegeId'),
+            headers: _headers,
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final data = jsonDecode(res.body);
+        if (data is List && data.isNotEmpty) {
+          // Return first active challenge
+          return data.first as Map<String, dynamic>;
+        }
+      }
+    } catch (e) {
+      debugPrint('[Challenge] exception: $e — using default');
+    }
+    // Default challenge fallback
+    return {
+      'title': 'This week: Reduce single-use plastic in 3 meals.',
+      'description':
+          'Log each plastic-free meal to earn bonus stardust!',
+      'pointReward': 50,
+    };
+  }
+
+  // ─── Suggestions ────────────────────────────────────────────────────────────
+  /// Student submits a sustainability suggestion to their college.
+  Future<bool> submitSuggestion({
+    required String userId,
+    required String collegeId,
+    required String title,
+    required String description,
+  }) async {
+    debugPrint('[Suggestion] POST $_baseUrl/suggestions/');
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$_baseUrl/suggestions/'),
+            headers: _headers,
+            body: jsonEncode({
+              'userId': userId,
+              'collegeId': collegeId,
+              'title': title,
+              'description': description,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      return res.statusCode >= 200 && res.statusCode < 300;
+    } catch (e) {
+      debugPrint('[Suggestion] exception: $e');
+      return false;
+    }
+  }
+
+  /// College admin fetches all suggestions from students.
+  Future<List<Map<String, dynamic>>> getSuggestions(String collegeId) async {
+    debugPrint('[Suggestion] GET $_baseUrl/suggestions/$collegeId');
+    try {
+      final res = await http
+          .get(
+            Uri.parse('$_baseUrl/suggestions/$collegeId'),
+            headers: _headers,
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final data = jsonDecode(res.body);
+        if (data is List) {
+          return data.cast<Map<String, dynamic>>();
+        }
+      }
+    } catch (e) {
+      debugPrint('[Suggestion] exception: $e');
+    }
+    return [];
+  }
+
+  /// Fetch personal impact report for a user.
+  Future<Map<String, dynamic>> getImpactReport(String userId) async {
+    debugPrint('[Report] GET $_baseUrl/reports/user/$userId');
+    try {
+      final res = await http
+          .get(Uri.parse('$_baseUrl/reports/user/$userId'), headers: _headers)
+          .timeout(const Duration(seconds: 30));
+      _assertOk(res);
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('[Report] exception: $e');
+      rethrow;
+    }
+  }
+
+  /// Fetch college-wide impact report.
   Future<Map<String, dynamic>> getCollegeImpactReport(String collegeId) async {
-    final res = await http.get(
-      Uri.parse('$_baseUrl/dashboard/impact-report/college/$collegeId'),
-      headers: _headers,
-    ).timeout(const Duration(seconds: 15));
-    _assertOk(res);
-    return jsonDecode(res.body) as Map<String, dynamic>;
+    debugPrint('[Report] GET $_baseUrl/reports/college/$collegeId');
+    try {
+      final res = await http
+          .get(Uri.parse('$_baseUrl/reports/college/$collegeId'),
+              headers: _headers)
+          .timeout(const Duration(seconds: 30));
+      _assertOk(res);
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('[Report] exception: $e');
+      rethrow;
+    }
   }
 }

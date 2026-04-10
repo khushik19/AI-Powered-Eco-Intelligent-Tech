@@ -91,7 +91,7 @@ class MeetTheStarsScreen extends StatelessWidget {
                     final photoPath = member['photo'] as String;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 20),
-                      child: GlassCard(
+                      child: LiquidGlassCard(
                         padding: const EdgeInsets.all(24),
                         borderColor: color.withOpacity(0.4),
                         gradient: LinearGradient(

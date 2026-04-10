@@ -1,3 +1,4 @@
+import 'dart:math' show max;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -128,7 +129,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
               style: const TextStyle(
                   fontFamily: 'Outfit', color: AppColors.textSecondary)),
           const SizedBox(height: 16),
-          GlassButton(text: 'Retry', onTap: _loadReport),
+          ElevatedButton(text: 'Retry', onTap: _loadReport),
         ],
       ),
     );
@@ -218,7 +219,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
   // ── Time period toggle ──────────────────────────────────────────────────
 
   Widget _buildTimePeriodToggle() {
-    return GlassCard(
+    return LiquidGlassCard(
       padding: const EdgeInsets.all(4),
       borderRadius: 16,
       child: Row(
@@ -322,7 +323,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
     final maxVal = max(maxCo2, maxEnergy);
     final yMax = maxVal == 0 ? 10.0 : maxVal * 1.2;
 
-    return GlassCard(
+    return LiquidGlassCard(
       padding: const EdgeInsets.fromLTRB(8, 20, 16, 8),
       borderColor: AppColors.nebulaBlue.withValues(alpha: 0.2),
       child: SizedBox(
@@ -435,7 +436,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
   }
 
   Widget _buildEmptyChart(String msg) {
-    return GlassCard(
+    return LiquidGlassCard(
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       borderColor: AppColors.glassBorder,
       child: Center(
@@ -494,7 +495,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
       );
     }).toList();
 
-    return GlassCard(
+    return LiquidGlassCard(
       padding: const EdgeInsets.all(20),
       borderColor: AppColors.cosmicPurple.withValues(alpha: 0.2),
       child: Column(
@@ -550,7 +551,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
   // ── Narrative card ──────────────────────────────────────────────────────
 
   Widget _buildNarrativeCard(String narrative) {
-    return GlassCard(
+    return LiquidGlassCard(
       padding: const EdgeInsets.all(20),
       borderColor: AppColors.cosmicGreen.withValues(alpha: 0.2),
       child: MarkdownBody(
@@ -607,9 +608,9 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: GlassCard(
+      child: LiquidGlassCard(
         padding: const EdgeInsets.all(18),
-        borderColor: AppColors.warning.withValues(alpha: 0.3),
+        borderColor: AppColors.stardustGold.withValues(alpha: 0.3),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -634,7 +635,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: AppColors.warning.withValues(alpha: 0.15),
+                    color: AppColors.stardustGold.withValues(alpha: 0.15),
                   ),
                   child: const Text(
                     'Not explored',
@@ -642,7 +643,7 @@ class _ImpactReportScreenState extends State<ImpactReportScreen> {
                       fontFamily: 'Outfit',
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.warning,
+                      color: AppColors.stardustGold,
                     ),
                   ),
                 ),
@@ -727,7 +728,7 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
+    return LiquidGlassCard(
       padding: const EdgeInsets.all(14),
       borderColor: color.withValues(alpha: 0.25),
       child: Column(

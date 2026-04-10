@@ -106,7 +106,7 @@ class _AllRecordsScreenState extends State<AllRecordsScreen> {
                                         fontFamily: 'Outfit',
                                         color: AppColors.textSecondary)),
                                 const SizedBox(height: 16),
-                                GlassButton(text: 'Retry', onTap: _loadRecords),
+                                ElevatedButton(text: 'Retry', onTap: _loadRecords),
                               ],
                             ),
                           )
@@ -143,7 +143,7 @@ class _AllRecordsScreenState extends State<AllRecordsScreen> {
                                   return Padding(
                                     padding:
                                         const EdgeInsets.only(bottom: 12),
-                                    child: GlassCard(
+                                    child: LiquidGlassCard(
                                       padding: const EdgeInsets.all(16),
                                       borderColor: color.withOpacity(0.2),
                                       child: Row(

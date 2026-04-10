@@ -41,7 +41,6 @@ class _RecordsScreenState extends State<RecordsScreen> {
   void initState() {
     super.initState();
     _loadRecentActivity();
-    _loadImpactReport();
   }
 
   Future<void> _loadRecentActivity() async {
@@ -63,18 +62,6 @@ class _RecordsScreenState extends State<RecordsScreen> {
     }
   }
 
-  Future<void> _loadImpactReport() async {
-    final uid = widget.userData['uid'] as String? ?? '';
-    if (uid.isEmpty) return;
-    setState(() => _reportLoading = true);
-    try {
-      final data = await ApiService.instance.getImpactReport(uid);
-      if (mounted) setState(() { _impactReport = data; _reportLoading = false; });
-    } catch (_) {
-      if (mounted) setState(() => _reportLoading = false);
-    }
-  }
-
   Color _colorForAction(String type) {
     switch (type) {
       case 'recycling':
@@ -87,7 +74,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
       case 'solar':
         return AppColors.electricCyan;
       default:
-        return AppColors.mutedOlive;
+        return AppColors.textMuted;
     }
   }
 
@@ -177,7 +164,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                       ),
                     )
                   else if (_recent.isEmpty)
-                    GlassCard(
+                    LiquidGlassCard(
                       padding: const EdgeInsets.symmetric(
                           vertical: 24, horizontal: 20),
                       borderColor: AppColors.neonMoss.withOpacity(0.2),
@@ -255,7 +242,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                   ).animate().fadeIn(delay: 400.ms),
                   const SizedBox(height: 12),
 
-                  GlassCard(
+                  LiquidGlassCard(
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -356,7 +343,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                     final color = Color(cat['color'] as int);
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: GlassCard(
+                      child: LiquidGlassCard(
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -422,7 +409,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                     );
                   }),
 
-                  GlassButton(
+                  ElevatedButton(
                     text: '+ Add Your Own Activity',
                     isOutline: true,
                     color: AppColors.softGrey,
@@ -465,7 +452,7 @@ class _RecordCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isVerifying = status == 'verifying' || status == 'pending';
-    return GlassCard(
+    return LiquidGlassCard(
       padding: const EdgeInsets.all(16),
       borderColor: color.withOpacity(0.2),
       child: Row(

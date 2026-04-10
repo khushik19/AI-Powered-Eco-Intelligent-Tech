@@ -24,7 +24,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   // Emojis assigned by rank position
   static const _rankEmojis = ['', '🌟', '⭐', '✨', '💫', '🌙', '🔥', '🌿', '💎', '🚀'];
-  
+
   @override
   void initState() {
     super.initState();
@@ -106,7 +106,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               Text(_error!, textAlign: TextAlign.center,
                   style: const TextStyle(fontFamily: 'Outfit', color: AppColors.textSecondary)),
               const SizedBox(height: 16),
-              GlassButton(text: 'Retry', onTap: _fetchLeaderboard),
+              ElevatedButton(text: 'Retry', onTap: _fetchLeaderboard),
             ],
           ),
         ),
@@ -265,7 +265,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     final institution = r['collegeId'] as String? ?? r['institution'] as String? ?? '—';
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: GlassCard(
+                      child: LiquidGlassCard(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 14),
                         borderColor: isUser

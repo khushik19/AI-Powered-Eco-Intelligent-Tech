@@ -1,131 +1,207 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:pin_code_fields/pin_code_fields.dart';
 import '../../config/app_colors.dart';
-import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
 import 'set_password_screen.dart';
 
 class OtpScreen extends StatefulWidget {
   final String email;
-  final Map<String, dynamic> userData;
+  final String name;
+  final String phone;
+  final String userType;
 
-  const OtpScreen({super.key, required this.email, required this.userData});
+  const OtpScreen({
+    super.key,
+    required this.email,
+    required this.name,
+    required this.phone,
+    required this.userType,
+  });
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  String _otp = '';
-  bool _isVerifying = false;
+  final List<TextEditingController> _controllers =
+      List.generate(6, (_) => TextEditingController());
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+  bool _isLoading = false;
 
-  void _verify() async {
+<<<<<<< HEAD
+  String get _otp =>
+      _controllers.map((c) => c.text).join();
+=======
+  String get _otp => _controllers.map((c) => c.text).join();
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+
+  Future<void> _verify() async {
     if (_otp.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter the 6-digit OTP')),
+        const SnackBar(content: Text('Please enter the complete OTP')),
       );
       return;
     }
-    setState(() => _isVerifying = true);
-    // In production: verify OTP via Firebase Auth phone or email OTP
-    // For hackathon: accept any 6-digit code
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isVerifying = false);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => SetPasswordScreen(userData: widget.userData),
-      ),
-    );
+    setState(() => _isLoading = true);
+    try {
+      // TODO: Replace with actual OTP verification
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SetPasswordScreen(
+            email: widget.email,
+            name: widget.name,
+            phone: widget.phone,
+            userType: widget.userType,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
+      backgroundColor: AppColors.abyss,
+=======
+      backgroundColor: Colors.transparent,
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.bioTeal),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Verify OTP',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+      ),
+<<<<<<< HEAD
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+=======
       body: CosmicBackground(
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 24),
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios,
-                      color: AppColors.textPrimary, size: 20),
-                  onPressed: () => Navigator.pop(context),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 20),
+              Icon(Icons.mark_email_read_outlined,
+                  color: AppColors.bioTeal, size: 64),
+              const SizedBox(height: 24),
+              Text(
+                'Check your email',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
-                const Spacer(),
-                const Text(
-                  'Verify\nYour Email',
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontSize: 36,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                    height: 1.2,
-                  ),
-                ).animate().fadeIn(),
-                const SizedBox(height: 12),
-                Text(
-                  'We sent a 6-digit code to\n${widget.email}',
-                  style: const TextStyle(
-                    fontFamily: 'Outfit',
-                    fontSize: 15,
-                    color: AppColors.textSecondary,
-                    height: 1.6,
-                  ),
-                ).animate().fadeIn(delay: 200.ms),
-                const SizedBox(height: 48),
-                PinCodeTextField(
-                  appContext: context,
-                  length: 6,
-                  onChanged: (v) => setState(() => _otp = v),
-                  onCompleted: (v) => setState(() => _otp = v),
-                  animationType: AnimationType.scale,
-                  pinTheme: PinTheme(
-                    shape: PinCodeFieldShape.box,
-                    borderRadius: BorderRadius.circular(12),
-                    fieldHeight: 56,
-                    fieldWidth: 48,
-                    activeFillColor: AppColors.glassWhiteStrong,
-                    selectedFillColor: AppColors.glassWhite,
-                    inactiveFillColor: AppColors.glassWhite,
-                    activeColor: AppColors.nebulaBlue,
-                    selectedColor: AppColors.cosmicPurple,
-                    inactiveColor: AppColors.glassBorder,
-                  ),
-                  enableActiveFill: true,
-                  cursorColor: AppColors.nebulaBlue,
-                  textStyle: const TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ).animate().fadeIn(delay: 400.ms),
-                const SizedBox(height: 32),
-                _isVerifying
-                    ? const Center(child: CircularProgressIndicator())
-                    : GlassButton(
-                        text: 'Verify & Continue',
-                        icon: Icons.check_circle_outline,
-                        onTap: _verify,
-                      ).animate().fadeIn(delay: 600.ms),
-                TextButton(
-                  onPressed: () {},
-                  child: Text(
-                    'Resend OTP',
-                    style: TextStyle(
-                      fontFamily: 'Outfit',
-                      color: AppColors.nebulaBlue,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'We sent a 6-digit OTP to\n${widget.email}',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+              ),
+              const SizedBox(height: 40),
+              // OTP boxes
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(6, (i) {
+                  return SizedBox(
+                    width: 46,
+                    height: 56,
+                    child: GlassCard(
+                      padding: EdgeInsets.zero,
+                      child: TextField(
+                        controller: _controllers[i],
+                        focusNode: _focusNodes[i],
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        maxLength: 1,
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        decoration: InputDecoration(
+                          counterText: '',
+                          border: InputBorder.none,
+                          fillColor: AppColors.glassWhiteStrong,
+                          filled: false,
+                        ),
+                        onChanged: (val) {
+                          if (val.isNotEmpty && i < 5) {
+                            _focusNodes[i + 1].requestFocus();
+                          } else if (val.isEmpty && i > 0) {
+                            _focusNodes[i - 1].requestFocus();
+                          }
+                        },
+                      ),
                     ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _verify,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.bioTeal,
+                  foregroundColor: AppColors.midnightBlack,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                const Spacer(flex: 2),
-              ],
-            ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Verify & Continue',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {},
+                child: Text(
+                  'Resend OTP',
+                  style: TextStyle(color: AppColors.bioTeal),
+                ),
+              ),
+            ],
+<<<<<<< HEAD
+=======
+          ),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
           ),
         ),
       ),

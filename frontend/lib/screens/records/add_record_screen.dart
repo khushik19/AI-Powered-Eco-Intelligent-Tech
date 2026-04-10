@@ -354,7 +354,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: GlassCard(
+                            child: LiquidGlassCard(
                               onTap: () => _pickMedia(),
                               padding: const EdgeInsets.symmetric(
                                   vertical: 18),
@@ -379,7 +379,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: GlassCard(
+                            child: LiquidGlassCard(
                               onTap: () => _pickMedia(video: true),
                               padding: const EdgeInsets.symmetric(
                                   vertical: 18),
@@ -419,7 +419,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
                       const SizedBox(height: 16),
                       if (widget.isCustom)
-                        GlassCard(
+                        LiquidGlassCard(
                           padding: const EdgeInsets.all(14),
                           borderColor:
                               AppColors.cream.withOpacity(0.3),
@@ -444,7 +444,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                       const SizedBox(height: 24),
                       _isLoading
                           ? const Center(child: CircularProgressIndicator())
-                          : GlassButton(
+                          : ElevatedButton(
                               text: 'Submit for Verification',
                               onTap: _submit,
                             ).animate().fadeIn(delay: 600.ms),
