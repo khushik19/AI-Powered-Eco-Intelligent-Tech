@@ -5,7 +5,7 @@ router = APIRouter()
 
 
 @router.get("/colleges")
-def college_leaderboard(city: str = None, state: str = None, limit: int = 20):
+async def college_leaderboard(city: str = None, state: str = None, limit: int = 20):
     """
     Top colleges by accreditation score.
     Optional filters: ?city=Chennai&state=TamilNadu
@@ -14,7 +14,7 @@ def college_leaderboard(city: str = None, state: str = None, limit: int = 20):
 
 
 @router.get("/individuals")
-def individual_leaderboard(
+async def individual_leaderboard(
     college_id: str = None, city: str = None,
     state: str = None, limit: int = 50
 ):

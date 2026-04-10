@@ -14,7 +14,7 @@ class SuggestionRequest(BaseModel):
 
 
 @router.post("/")
-def suggest(req: SuggestionRequest):
+async def suggest(req: SuggestionRequest):
     """Student submits a suggestion for a new sustainable practice."""
     doc = {
         **req.dict(),
@@ -26,6 +26,6 @@ def suggest(req: SuggestionRequest):
 
 
 @router.get("/{college_id}")
-def list_suggestions(college_id: str):
+async def list_suggestions(college_id: str):
     """College admin views all suggestions from their students."""
     return get_suggestions(college_id)

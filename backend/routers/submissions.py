@@ -62,6 +62,6 @@ async def submit_action(req: SubmissionRequest):
 
 
 @router.get("/predefined/{role}")
-def get_predefined(role: str):
+async def get_predefined(role: str):
     """Returns the list of preset eco-actions for the given role."""
     return get_predefined_actions(role)

@@ -13,7 +13,7 @@ class ChallengeCreate(BaseModel):
     deadline: str
 
 @router.post("/create")
-def create(req: ChallengeCreate):
+async def create(req: ChallengeCreate):
     challenge = req.dict()
     challenge["isActive"] = True
     challenge["createdAt"] = datetime.utcnow().isoformat()
@@ -21,5 +21,5 @@ def create(req: ChallengeCreate):
     return {"id": id}
 
 @router.get("/{collegeId}")
-def list_challenges(collegeId: str):
+async def list_challenges(collegeId: str):
     return get_challenges(collegeId)

@@ -6,7 +6,7 @@ router = APIRouter()
 
 
 @router.get("/college/{college_id}")
-def college_dash(college_id: str):
+async def college_dash(college_id: str):
     """
     Returns everything the college dashboard needs:
     profile data, monthly CO2 chart data, action breakdown, blind spots,
@@ -22,6 +22,6 @@ def college_dash(college_id: str):
 
 
 @router.get("/student/{user_id}")
-def student_dash(user_id: str):
+async def student_dash(user_id: str):
     """Returns student profile and their submission history."""
     return get_student_dashboard(user_id)
