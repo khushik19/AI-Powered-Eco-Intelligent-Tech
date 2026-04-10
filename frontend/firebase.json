@@ -23,6 +23,7 @@
     }
   },
   "hosting": {
+    "site": "cleancosmos",
     "public": "build/web",
     "ignore": [
       "firebase.json",
