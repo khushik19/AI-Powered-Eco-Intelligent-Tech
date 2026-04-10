@@ -186,51 +186,63 @@ class ApiService {
     return url;
   }
 
-  /// AI classify — 10 s timeout, NEVER throws, always returns safe map.
-  /// Sends only the description text (NOT the full image) to avoid huge payloads.
-  Future<Map<String, dynamic>> _classifyWithFallback(
-      String description) async {
-    debugPrint('[SUBMIT] Step 2: AI classify for "$description"...');
+  /// Sends image + description to AI. Returns the decoded response map.
+  /// If AI says rejected=true, returns that map (caller must check).
+  /// On network/parse failure returns a safe fallback (always approved).
+  Future<Map<String, dynamic>> _classifyWithImage(
+      Uint8List imageBytes, String description) async {
+    debugPrint('[SUBMIT AI] Sending image (${imageBytes.length} bytes) + description to AI...');
     try {
+      // Compress: cap at 800KB of base64 to stay under API limits
+      Uint8List sendBytes = imageBytes;
+      if (imageBytes.length > 600000) {
+        // Take first 600KB — good enough for visual classification
+        sendBytes = imageBytes.sublist(0, 600000);
+        debugPrint('[SUBMIT AI] Image truncated to 600KB for API');
+      }
+      final imageBase64 = base64Encode(sendBytes);
+
       final res = await http
           .post(
             Uri.parse('$_baseUrl/submissions/classify'),
             headers: _headers,
             body: jsonEncode({
-              'imageBase64': '', // skip sending huge base64 — backend uses text
+              'imageBase64': imageBase64,
               'description': description,
             }),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 30));
 
-      debugPrint(
-          '[SUBMIT] Step 2 AI response: status=${res.statusCode} body=${res.body.length > 200 ? res.body.substring(0, 200) : res.body}');
+      debugPrint('[SUBMIT AI] Response: status=${res.statusCode} len=${res.body.length}');
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
         if (decoded is Map<String, dynamic>) {
-          debugPrint('[SUBMIT] Step 2 DONE: AI success');
+          final rejected = decoded['rejected'] == true;
+          debugPrint('[SUBMIT AI] Parsed OK — rejected=$rejected');
           return decoded;
         }
       }
-      debugPrint('[SUBMIT] Step 2: AI non-2xx, using fallback');
+      debugPrint('[SUBMIT AI] Non-2xx or bad body — using fallback');
     } catch (e) {
-      debugPrint('[SUBMIT] Step 2: AI skipped (${e.runtimeType}): $e');
+      debugPrint('[SUBMIT AI] Exception: $e — using fallback');
     }
 
-    // Fallback
-    debugPrint('[SUBMIT] Step 2 DONE: using fallback values');
+    // Fallback: approve with minimal points when AI is unreachable
     return {
+      'success': true,
+      'rejected': false,
+      'isLegitimate': true,
+      'rejectionReason': null,
       'actionType': 'other',
-      'stardustAwarded': 25,
-      'co2ReducedKg': 0.5,
-      'energySavedKwh': 0.1,
+      'stardustAwarded': 10,
+      'co2ReducedKg': 0.2,
+      'energySavedKwh': 0.0,
       'waterSavedLiters': 0.0,
       'eWasteKg': 0.0,
-      'estimatedCostSavingRupees': 5.0,
-      'impactSummary': 'Eco action recorded successfully!',
-      'realWorldEquivalent': 'Keeping the planet a little cleaner',
-      'isLegitimate': true,
+      'estimatedCostSavingRupees': 0.0,
+      'impactSummary': 'Eco-action recorded (AI offline — auto-approved).',
+      'realWorldEquivalent': null,
     };
   }
 
@@ -254,20 +266,29 @@ class ApiService {
     debugPrint(
         '[SUBMIT] ═══════════ START ═══════════ userId=$userId collegeId=$collegeId');
 
-    // ── Parallel: upload + AI ──────────────────────────────────────────────────
+    // ── Step 1: Upload image (parallel with AI for speed) ─────────────────────
     final uploadFuture = _uploadImageToStorage(imageBytes, userId);
-    final aiFuture = _classifyWithFallback(description);
 
-    // Collect upload result (non-fatal if fails)
+    // ── Step 2: AI classify WITH image ────────────────────────────────────────
+    // We do this FIRST and check rejection BEFORE touching Firestore.
+    debugPrint('[SUBMIT] Step 2: Sending image to AI validator...');
+    final ai = await _classifyWithImage(imageBytes, description);
+
+    // ── Check AI rejection immediately ─────────────────────────────────────────
+    if (ai['rejected'] == true) {
+      final reason = ai['rejectionReason'] as String? ??
+          'This action was not recognized as a valid eco-activity.';
+      debugPrint('[SUBMIT] REJECTED by AI: $reason');
+      throw SubmissionRejectedException(reason);
+    }
+
+    // ── Collect upload result now (non-fatal) ─────────────────────────────────
     String imageUrl = '';
     try {
       imageUrl = await uploadFuture;
     } catch (e) {
       debugPrint('[SUBMIT] Step 1 FAILED (non-fatal): $e');
     }
-
-    // AI result always succeeds
-    final ai = await aiFuture;
 
     // ── Unpack ────────────────────────────────────────────────────────────────
     final actionType = ai['actionType'] as String? ?? 'other';
@@ -497,10 +518,10 @@ class ApiService {
 
   /// Fetch personal impact report for a user.
   Future<Map<String, dynamic>> getImpactReport(String userId) async {
-    debugPrint('[Report] GET $_baseUrl/reports/user/$userId');
+    debugPrint('[Report] GET $_baseUrl/dashboard/impact-report/$userId');
     try {
       final res = await http
-          .get(Uri.parse('$_baseUrl/reports/user/$userId'), headers: _headers)
+          .get(Uri.parse('$_baseUrl/dashboard/impact-report/$userId'), headers: _headers)
           .timeout(const Duration(seconds: 30));
       _assertOk(res);
       return jsonDecode(res.body) as Map<String, dynamic>;
@@ -512,10 +533,10 @@ class ApiService {
 
   /// Fetch college-wide impact report.
   Future<Map<String, dynamic>> getCollegeImpactReport(String collegeId) async {
-    debugPrint('[Report] GET $_baseUrl/reports/college/$collegeId');
+    debugPrint('[Report] GET $_baseUrl/dashboard/impact-report/college/$collegeId');
     try {
       final res = await http
-          .get(Uri.parse('$_baseUrl/reports/college/$collegeId'),
+          .get(Uri.parse('$_baseUrl/dashboard/impact-report/college/$collegeId'),
               headers: _headers)
           .timeout(const Duration(seconds: 30));
       _assertOk(res);
@@ -525,4 +546,14 @@ class ApiService {
       rethrow;
     }
   }
+}
+
+/// Thrown by [ApiService.submitAction] when the AI explicitly rejects
+/// the submitted image/description as not a valid eco-action.
+class SubmissionRejectedException implements Exception {
+  final String reason;
+  const SubmissionRejectedException(this.reason);
+
+  @override
+  String toString() => reason;
 }
