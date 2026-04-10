@@ -49,6 +49,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnim,
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -116,6 +119,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   child: Column(
                     children: [
 <<<<<<< HEAD
+<<<<<<< HEAD
                       _buildFeatureRow(
                           Icons.qr_code_scanner, 'AI Waste Scanner', AppColors.bioTeal),
                       const Divider(color: Colors.white10),
@@ -125,6 +129,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       _buildFeatureRow(
                           Icons.public, 'Community Challenges', AppColors.seaFoam),
 =======
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
                       _buildFeatureRow(Icons.qr_code_scanner,
                           'AI Waste Scanner', AppColors.bioTeal),
                       const Divider(color: Colors.white10),
@@ -133,6 +139,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       const Divider(color: Colors.white10),
                       _buildFeatureRow(Icons.public, 'Community Challenges',
                           AppColors.seaFoam),
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
                     ],
                   ),
@@ -215,6 +224,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 }
 =======
 }

@@ -53,7 +53,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
 <<<<<<< HEAD
+<<<<<<< HEAD
       backgroundColor: AppColors.abyss,
+=======
+      backgroundColor: Colors.transparent,
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
       backgroundColor: Colors.transparent,
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
@@ -70,14 +74,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       ),
 <<<<<<< HEAD
+<<<<<<< HEAD
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
 =======
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
       body: CosmicBackground(
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
           child: Form(
             key: _formKey,
@@ -101,7 +111,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Name
                 GlassCard(
 <<<<<<< HEAD
+<<<<<<< HEAD
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+=======
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -116,7 +131,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       hintStyle: TextStyle(color: AppColors.textMuted),
                       border: InputBorder.none,
 <<<<<<< HEAD
+<<<<<<< HEAD
                       icon: Icon(Icons.person_outline, color: AppColors.bioTeal),
+=======
+                      icon:
+                          Icon(Icons.person_outline, color: AppColors.bioTeal),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
                       icon:
                           Icon(Icons.person_outline, color: AppColors.bioTeal),
@@ -128,7 +148,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Email
                 GlassCard(
 <<<<<<< HEAD
+<<<<<<< HEAD
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+=======
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -147,7 +172,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       hintStyle: TextStyle(color: AppColors.textMuted),
                       border: InputBorder.none,
 <<<<<<< HEAD
+<<<<<<< HEAD
                       icon: Icon(Icons.email_outlined, color: AppColors.bioTeal),
+=======
+                      icon:
+                          Icon(Icons.email_outlined, color: AppColors.bioTeal),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
                       icon:
                           Icon(Icons.email_outlined, color: AppColors.bioTeal),
@@ -159,7 +189,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Phone
                 GlassCard(
 <<<<<<< HEAD
+<<<<<<< HEAD
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+=======
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -175,7 +210,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       hintStyle: TextStyle(color: AppColors.textMuted),
                       border: InputBorder.none,
 <<<<<<< HEAD
+<<<<<<< HEAD
                       icon: Icon(Icons.phone_outlined, color: AppColors.bioTeal),
+=======
+                      icon:
+                          Icon(Icons.phone_outlined, color: AppColors.bioTeal),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
                       icon:
                           Icon(Icons.phone_outlined, color: AppColors.bioTeal),
@@ -212,6 +252,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+          ),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
           ),
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
@@ -220,7 +264,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
 }
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd

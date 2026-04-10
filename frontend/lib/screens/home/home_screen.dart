@@ -13,6 +13,9 @@ import '../records/add_record_screen.dart';
 import '../chatbot/chatbot_screen.dart';
 import '../profile/profile_screen.dart';
 import 'org_dashboard_screen.dart';
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 
 class HomeScreen extends StatefulWidget {
@@ -25,7 +28,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 
   bool get _isOrg => widget.userData['role'] == 'college_org';
 
@@ -45,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
 <<<<<<< HEAD
       backgroundColor: AppColors.abyss,
       appBar: AppBar(
@@ -267,6 +274,171 @@ class _DashboardTabState extends State<_DashboardTab> {
                 ),
               ],
             ),
+=======
+      backgroundColor: Colors.transparent,
+      body: CosmicBackground(
+        showStardustRain: false,
+        child: IndexedStack(index: _selectedIndex, children: _pages),
+      ),
+      // Nebula chat FAB
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => ChatbotScreen(userData: widget.userData)),
+        ),
+        backgroundColor: AppColors.bioTeal,
+        foregroundColor: AppColors.midnightBlack,
+        icon: const Icon(Icons.auto_awesome, size: 18),
+        label: const Text('Ask Nebula',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+      ),
+      bottomNavigationBar: NavigationBar(
+        backgroundColor: AppColors.backgroundSecondary,
+        indicatorColor: AppColors.bioTeal.withOpacity(0.2),
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+        destinations: [
+          const NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home, color: AppColors.bioTeal),
+              label: 'Home'),
+          const NavigationDestination(
+              icon: Icon(Icons.list_alt_outlined),
+              selectedIcon: Icon(Icons.list_alt, color: AppColors.bioTeal),
+              label: 'Records'),
+          const NavigationDestination(
+              icon: Icon(Icons.leaderboard_outlined),
+              selectedIcon: Icon(Icons.leaderboard, color: AppColors.bioTeal),
+              label: 'Ranks'),
+          NavigationDestination(
+              icon: Icon(_isOrg
+                  ? Icons.dashboard_outlined
+                  : Icons.person_outline),
+              selectedIcon: Icon(
+                  _isOrg ? Icons.dashboard : Icons.person,
+                  color: AppColors.bioTeal),
+              label: _isOrg ? 'Dashboard' : 'Profile'),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Home Dashboard Tab ────────────────────────────────────────────────────────
+
+class _DashboardTab extends StatefulWidget {
+  final Map<String, dynamic> userData;
+  final VoidCallback onRecordTap;
+  const _DashboardTab({required this.userData, required this.onRecordTap});
+
+  @override
+  State<_DashboardTab> createState() => _DashboardTabState();
+}
+
+class _DashboardTabState extends State<_DashboardTab> {
+  Map<String, dynamic>? _challenge;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChallenge();
+  }
+
+  Future<void> _loadChallenge() async {
+    final collegeId = widget.userData['institution'] as String? ??
+        widget.userData['collegeId'] as String? ?? '';
+    try {
+      final c = await ApiService.instance.getChallenge(collegeId);
+      if (mounted) setState(() => _challenge = c);
+    } catch (_) {}
+  }
+
+  String get _challengeText {
+    if (_challenge == null) {
+      return 'This week: Reduce single-use plastic in 3 meals. '
+          'Log each meal to earn bonus stardust!';
+    }
+    final title = _challenge!['title'] as String? ?? '';
+    final desc = _challenge!['description'] as String? ?? '';
+    final pts = _challenge!['pointReward'] as int? ?? 0;
+    return '$title${desc.isNotEmpty ? '\n$desc' : ''}${pts > 0 ? ' (+$pts stardust)' : ''}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (widget.userData['name'] as String? ?? 'Star')
+        .split(' ')
+        .first;
+    final stardust = widget.userData['stardust'] ?? 0;
+    final streak = widget.userData['weeklyStreak'] ?? 0;
+
+    return CosmicBackground(
+      showStardustRain: false,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Greeting ──
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Welcome back 🌿',
+                          style: TextStyle(
+                              color: AppColors.seaFoam, fontSize: 14)),
+                      const SizedBox(height: 4),
+                      Text('Hello, $name',
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                          )),
+                    ],
+                  ),
+                ),
+                // Streak badge
+                GlassCard(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  borderColor: AppColors.reefCoral.withOpacity(0.4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.local_fire_department,
+                          color: AppColors.reefCoral, size: 18),
+                      const SizedBox(width: 4),
+                      Text('$streak',
+                          style: const TextStyle(
+                              color: AppColors.reefCoral,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Stardust badge
+                GlassCard(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  borderColor: AppColors.bioTeal.withOpacity(0.4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.star,
+                          color: AppColors.bioTeal, size: 18),
+                      const SizedBox(width: 4),
+                      Text('$stardust',
+                          style: const TextStyle(
+                              color: AppColors.bioTeal,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
             const SizedBox(height: 24),
 
             // ── Log action card ──
@@ -325,6 +497,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                     ],
                   ),
 <<<<<<< HEAD
+<<<<<<< HEAD
                 ],
               ),
             ),
@@ -363,6 +536,33 @@ class _DashboardTabState extends State<_DashboardTab> {
                 ],
               ),
             ),
+=======
+                  const SizedBox(height: 8),
+                  _challenge == null
+                      ? Row(
+                          children: [
+                            SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: AppColors.reefCoral),
+                            ),
+                            const SizedBox(width: 8),
+                            Text('Loading challenge…',
+                                style: TextStyle(
+                                    color: AppColors.textMuted, fontSize: 12)),
+                          ],
+                        )
+                      : Text(_challengeText,
+                          style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 13,
+                              height: 1.5)),
+                ],
+              ),
+            ),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
             const SizedBox(height: 24),
 
             // ── Quick Actions ──
@@ -373,6 +573,9 @@ class _DashboardTabState extends State<_DashboardTab> {
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2,
                 )),
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
             const SizedBox(height: 12),
             GridView.count(
@@ -381,6 +584,7 @@ class _DashboardTabState extends State<_DashboardTab> {
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
+<<<<<<< HEAD
 <<<<<<< HEAD
               children: [
                 _buildActionItem("Waste Scan", Icons.qr_code_scanner, AppColors.bioTeal),
@@ -426,6 +630,8 @@ class _DashboardTabState extends State<_DashboardTab> {
   }
 }
 =======
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
               childAspectRatio: 2.2,
               children: [
                 _QuickAction(
@@ -518,4 +724,7 @@ class _QuickAction extends StatelessWidget {
     );
   }
 }
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 class AppColors {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
   // Core palette
@@ -49,6 +52,7 @@ class AppColors {
     stardustGold,
   ];
 }
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
   // ── Bio-Luminescent Night Palette ─────────────────────────────────────────
@@ -100,5 +104,7 @@ class AppColors {
   ];
 }
 >>>>>>> 9a1a991c4a0ff6488c71bc926a7e96f24c21bd19
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd

@@ -9,6 +9,7 @@ class LiquidGlassCard extends StatelessWidget {
   final Widget child;
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   final EdgeInsetsGeometry? padding;
 =======
   final double borderRadius;
@@ -23,10 +24,14 @@ class LiquidGlassCard extends StatelessWidget {
 =======
   final EdgeInsetsGeometry? padding;
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
+  final EdgeInsetsGeometry? padding;
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 
   const LiquidGlassCard({
     super.key,
     required this.child,
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     this.padding,
@@ -40,6 +45,9 @@ class LiquidGlassCard extends StatelessWidget {
     this.height,
     this.blurStrength = 28,
 >>>>>>> 9a1a991c4a0ff6488c71bc926a7e96f24c21bd19
+=======
+    this.padding,
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
     this.padding,
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
@@ -82,6 +90,7 @@ class LiquidGlassCard extends StatelessWidget {
           ),
           child,
         ],
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
     final tint = tintColor ?? AppColors.electricCyan;
@@ -235,10 +244,13 @@ class LiquidGlassCard extends StatelessWidget {
 >>>>>>> 9a1a991c4a0ff6488c71bc926a7e96f24c21bd19
 =======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
       ),
     );
   }
 }
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 /// Liquid Glass Button — pill-shaped with neon glow press effect
@@ -402,5 +414,7 @@ class _LiquidGlassButtonState extends State<LiquidGlassButton>
     );
   }
 }
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd

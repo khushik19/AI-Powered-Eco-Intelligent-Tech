@@ -34,6 +34,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     setState(() => _isLoading = true);
     try {
 <<<<<<< HEAD
+<<<<<<< HEAD
       // TODO: Replace with actual registration / password-set logic
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return;
@@ -43,6 +44,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
         (_) => false,
       );
 =======
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
       await AuthService.signUp(
         email: widget.email,
         password: _passwordController.text,
@@ -78,6 +81,9 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Registration failed: ${e.toString().split(']').last}')),
       );
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -95,7 +101,11 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
 <<<<<<< HEAD
+<<<<<<< HEAD
       backgroundColor: AppColors.abyss,
+=======
+      backgroundColor: Colors.transparent,
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
       backgroundColor: Colors.transparent,
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
@@ -112,14 +122,20 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
         ),
       ),
 <<<<<<< HEAD
+<<<<<<< HEAD
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
 =======
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
       body: CosmicBackground(
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
           child: Form(
             key: _formKey,
@@ -148,7 +164,12 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                 // Password
                 GlassCard(
 <<<<<<< HEAD
+<<<<<<< HEAD
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+=======
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -184,7 +205,12 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                 // Confirm Password
                 GlassCard(
 <<<<<<< HEAD
+<<<<<<< HEAD
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+=======
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -195,7 +221,12 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                     style: TextStyle(color: AppColors.textPrimary),
                     validator: (v) {
 <<<<<<< HEAD
+<<<<<<< HEAD
                       if (v == null || v.isEmpty) return 'Please confirm your password';
+=======
+                      if (v == null || v.isEmpty)
+                        return 'Please confirm your password';
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
                       if (v == null || v.isEmpty)
                         return 'Please confirm your password';
@@ -259,7 +290,11 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     );
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
 }
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd

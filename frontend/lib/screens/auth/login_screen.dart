@@ -17,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
 <<<<<<< HEAD
+<<<<<<< HEAD
     setState(() => _isLoading = true);
     try {
       // TODO: Replace with your actual auth logic
@@ -32,6 +33,8 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(content: Text('Login failed: $e')),
       );
 =======
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all fields')),
@@ -95,6 +98,9 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -113,6 +119,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
               ),
@@ -127,6 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 40),
               // Email field
               GlassCard(
+<<<<<<< HEAD
 <<<<<<< HEAD
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: TextField(
@@ -164,6 +174,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: TextField(
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: TextField(
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   style: TextStyle(color: AppColors.textPrimary),
@@ -179,7 +194,12 @@ class _LoginScreenState extends State<LoginScreen> {
               // Password field
               GlassCard(
 <<<<<<< HEAD
+<<<<<<< HEAD
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+=======
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -233,6 +253,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ],
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+          ),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
           ),
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
@@ -242,7 +266,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
 }
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd

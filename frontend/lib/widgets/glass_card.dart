@@ -1,5 +1,6 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 
@@ -31,6 +32,8 @@ class GlassCard extends StatelessWidget {
   final Gradient? gradient;
 >>>>>>> 9a1a991c4a0ff6488c71bc926a7e96f24c21bd19
 =======
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 
@@ -47,11 +50,15 @@ class GlassCard extends StatelessWidget {
   final Color? fillColor;
   final Gradient? gradient;
   final VoidCallback? onTap;
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 
   const GlassCard({
     super.key,
     required this.child,
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     this.padding,
@@ -69,6 +76,8 @@ class GlassCard extends StatelessWidget {
     this.gradient,
 >>>>>>> 9a1a991c4a0ff6488c71bc926a7e96f24c21bd19
 =======
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
     this.padding,
     this.margin,
     this.borderRadius = 16.0,
@@ -76,11 +85,15 @@ class GlassCard extends StatelessWidget {
     this.fillColor,
     this.gradient,
     this.onTap,
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
   });
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     return Container(
@@ -240,6 +253,8 @@ class GlassButton extends StatefulWidget {
   final double width;
   final IconData? icon;
 =======
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
     final container = Container(
       margin: margin,
       padding: padding ?? const EdgeInsets.all(16),
@@ -269,12 +284,16 @@ class GlassButton extends StatelessWidget {
   final IconData? icon;
   final Color? color;
   final bool isOutline;
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 
   const GlassButton({
     super.key,
     required this.text,
     required this.onTap,
+<<<<<<< HEAD
 <<<<<<< HEAD
     this.color,
     this.isOutline = false,
@@ -419,6 +438,8 @@ class _GlassButtonState extends State<GlassButton>
           ),
         ),
 =======
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
     this.icon,
     this.color,
     this.isOutline = false,
@@ -486,12 +507,18 @@ class _GlassButtonState extends State<GlassButton>
           ),
         ),
         child: label,
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
       ),
     );
   }
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> 9a1a991c4a0ff6488c71bc926a7e96f24c21bd19
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd

@@ -28,8 +28,12 @@ class _OtpScreenState extends State<OtpScreen> {
   bool _isLoading = false;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   String get _otp =>
       _controllers.map((c) => c.text).join();
+=======
+  String get _otp => _controllers.map((c) => c.text).join();
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
   String get _otp => _controllers.map((c) => c.text).join();
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
@@ -77,7 +81,11 @@ class _OtpScreenState extends State<OtpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
 <<<<<<< HEAD
+<<<<<<< HEAD
       backgroundColor: AppColors.abyss,
+=======
+      backgroundColor: Colors.transparent,
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
       backgroundColor: Colors.transparent,
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
@@ -94,14 +102,20 @@ class _OtpScreenState extends State<OtpScreen> {
         ),
       ),
 <<<<<<< HEAD
+<<<<<<< HEAD
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
 =======
+=======
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
       body: CosmicBackground(
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+<<<<<<< HEAD
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
+=======
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -199,6 +213,10 @@ class _OtpScreenState extends State<OtpScreen> {
               ),
             ],
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+          ),
+>>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
 =======
           ),
 >>>>>>> 882ea7c6e10071e1ef12a7de13e7ecfc94d430dd
