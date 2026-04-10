@@ -65,14 +65,14 @@ class _RecordsScreenState extends State<RecordsScreen> {
       case 'recycling':
       case 'cutsWaste':
       case 'composting':
-        return AppColors.oliveGreen;
+        return AppColors.neonMoss;
       case 'water':
       case 'optimizesResources':
       case 'energy':
       case 'solar':
-        return AppColors.tealBlue;
+        return AppColors.electricCyan;
       default:
-        return AppColors.forestGreen;
+        return AppColors.mutedOlive;
     }
   }
 
@@ -101,9 +101,10 @@ class _RecordsScreenState extends State<RecordsScreen> {
                 Text(
                   'Every action is a star in your cosmos.',
                   style: TextStyle(
-                      fontFamily: 'Outfit',
-                      fontSize: 14,
-                      color: AppColors.textSecondary),
+                    fontFamily: 'Outfit',
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
                 ).animate().fadeIn(delay: 150.ms),
               ],
             ),
@@ -115,7 +116,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Recent Activity header with View Report
+                  // ── Recent Activity header with View All ──────────────────
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -129,70 +130,46 @@ class _RecordsScreenState extends State<RecordsScreen> {
                           letterSpacing: 2,
                         ),
                       ),
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ReportScreen(
-                                  userData: widget.userData,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              'View Report →',
-                              style: TextStyle(
-                                fontFamily: 'Outfit',
-                                fontSize: 12,
-                                color: AppColors.dustyRose,
-                              ),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AllRecordsScreen(
+                              userId: widget.userData['uid'] as String? ?? '',
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AllRecordsScreen(
-                                  userId: widget.userData['uid']
-                                          as String? ??
-                                      '',
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              'View All →',
-                              style: TextStyle(
-                                fontFamily: 'Outfit',
-                                fontSize: 12,
-                                color: AppColors.oliveGreen,
-                              ),
-                            ),
+                        ),
+                        child: Text(
+                          'View All →',
+                          style: TextStyle(
+                            fontFamily: 'Outfit',
+                            fontSize: 12,
+                            color: AppColors.neonMoss,
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ).animate().fadeIn(delay: 200.ms),
                   const SizedBox(height: 12),
 
+                  // ── Recent activity cards ─────────────────────────────────
                   if (_isLoading)
                     const Center(
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 16),
                         child: CircularProgressIndicator(
-                            color: AppColors.oliveGreen, strokeWidth: 2),
+                            color: AppColors.neonMoss, strokeWidth: 2),
                       ),
                     )
                   else if (_recent.isEmpty)
                     GlassCard(
                       padding: const EdgeInsets.symmetric(
                           vertical: 24, horizontal: 20),
-                      borderColor: AppColors.oliveGreen.withOpacity(0.2),
+                      borderColor: AppColors.neonMoss.withOpacity(0.2),
                       child: Column(
                         children: [
                           const Icon(Icons.eco,
-                              color: AppColors.oliveGreen, size: 36),
+                              color: AppColors.neonMoss, size: 36),
                           const SizedBox(height: 10),
                           const Text(
                             'No activities yet!',
@@ -220,22 +197,17 @@ class _RecordsScreenState extends State<RecordsScreen> {
                     ..._recent.asMap().entries.map((entry) {
                       final i = entry.key;
                       final r = entry.value;
-                      final actionType =
-                          r['actionType'] as String? ?? 'other';
-                      final emoji =
-                          _actionEmoji[actionType] ?? '🌍';
+                      final actionType = r['actionType'] as String? ?? 'other';
+                      final emoji = _actionEmoji[actionType] ?? '🌍';
                       final stardust =
-                          (r['stardustAwarded'] as num?)?.toInt() ??
-                              0;
-                      final date =
-                          (r['createdAt'] as String? ?? '')
-                              .split('T')
-                              .first;
+                          (r['stardustAwarded'] as num?)?.toInt() ?? 0;
+                      final date = (r['createdAt'] as String? ?? '')
+                          .split('T')
+                          .first;
                       final description =
                           r['description'] as String? ?? actionType;
                       final color = _colorForAction(actionType);
-                      final status =
-                          r['status'] as String? ?? 'verifying';
+                      final status = r['status'] as String? ?? 'verifying';
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -248,14 +220,109 @@ class _RecordsScreenState extends State<RecordsScreen> {
                           color: color,
                           status: status,
                         ).animate().fadeIn(
-                            delay: Duration(
-                                milliseconds: 300 + i * 100)),
+                            delay:
+                                Duration(milliseconds: 300 + i * 100)),
                       );
                     }),
 
+                  const SizedBox(height: 20),
+
+                  // ── VIEW REPORT — full prominent card ─────────────────────
+                  Text(
+                    'YOUR IMPACT',
+                    style: TextStyle(
+                      fontFamily: 'Montserrat',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textMuted,
+                      letterSpacing: 2,
+                    ),
+                  ).animate().fadeIn(delay: 400.ms),
+                  const SizedBox(height: 12),
+
+                  GlassCard(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReportScreen(userData: widget.userData),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(22),
+                    borderColor: AppColors.electricCyan.withOpacity(0.35),
+                    child: Row(
+                      children: [
+                        // Left: icon in glowing circle
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [
+                                AppColors.electricCyan,
+                                AppColors.neonMoss,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.electricCyan.withOpacity(0.35),
+                                blurRadius: 18,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.bar_chart_rounded,
+                            color: AppColors.midnightBlack,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        // Right: text
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'View Impact Report',
+                                style: TextStyle(
+                                  fontFamily: 'Montserrat',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'See your CO₂ saved, stardust earned\nand full sustainability breakdown.',
+                                style: TextStyle(
+                                  fontFamily: 'Outfit',
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          color: AppColors.electricCyan,
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(delay: 450.ms)
+                      .slideY(begin: 0.05, end: 0),
+
                   const SizedBox(height: 28),
 
-                  // Add New Record
+                  // ── Add New Record ────────────────────────────────────────
                   Text(
                     'ADD NEW RECORD',
                     style: TextStyle(
@@ -305,8 +372,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     cat['title'] as String,
@@ -335,8 +401,8 @@ class _RecordsScreenState extends State<RecordsScreen> {
                       )
                           .animate()
                           .fadeIn(
-                              delay: Duration(
-                                  milliseconds: 500 + i * 100))
+                              delay:
+                                  Duration(milliseconds: 500 + i * 100))
                           .slideX(begin: 0.05, end: 0),
                     );
                   }),
@@ -344,7 +410,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                   GlassButton(
                     text: '+ Add Your Own Activity',
                     isOutline: true,
-                    color: AppColors.cream,
+                    color: AppColors.softGrey,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -424,7 +490,7 @@ class _RecordCard extends StatelessWidget {
                           height: 10,
                           child: CircularProgressIndicator(
                             strokeWidth: 1.5,
-                            color: AppColors.dustyRose,
+                            color: AppColors.electricCyan,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -433,7 +499,7 @@ class _RecordCard extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: 'Outfit',
                             fontSize: 11,
-                            color: AppColors.dustyRose,
+                            color: AppColors.electricCyan,
                           ),
                         ),
                       ],
@@ -443,21 +509,20 @@ class _RecordCard extends StatelessWidget {
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               color: isVerifying
-                  ? AppColors.dustyRose.withOpacity(0.15)
-                  : AppColors.oliveGreen.withOpacity(0.15),
+                  ? AppColors.electricCyan.withOpacity(0.12)
+                  : AppColors.neonMoss.withOpacity(0.15),
             ),
             child: Row(
               children: [
                 Icon(
                   isVerifying ? Icons.hourglass_top : Icons.star,
                   color: isVerifying
-                      ? AppColors.dustyRose
-                      : AppColors.oliveGreen,
+                      ? AppColors.electricCyan
+                      : AppColors.neonMoss,
                   size: 12,
                 ),
                 const SizedBox(width: 4),
@@ -468,8 +533,8 @@ class _RecordCard extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: isVerifying
-                        ? AppColors.dustyRose
-                        : AppColors.oliveGreen,
+                        ? AppColors.electricCyan
+                        : AppColors.neonMoss,
                   ),
                 ),
               ],

@@ -1,45 +1,51 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // New Brand Palette
-  static const Color forestGreen = Color(0xFF0A3323);   // primary dark green
-  static const Color oliveGreen = Color(0xFF839958);    // secondary olive
-  static const Color cream = Color(0xFFF7F4D5);         // light cream/background text
-  static const Color dustyRose = Color(0xFFD3968C);     // accent rose
-  static const Color tealBlue = Color(0xFF105666);      // deep teal
+  // ── Bio-Luminescent Night Palette ─────────────────────────────────────────
+  static const Color midnightBlack  = Color(0xFF05070D);  // deep background
+  static const Color neonMoss       = Color(0xFF7CFFB2);  // primary accent (was oliveGreen)
+  static const Color electricCyan   = Color(0xFF00E5FF);  // secondary accent (was tealBlue)
+  static const Color mutedOlive     = Color(0xFF5A7D6A);  // muted green (was forestGreen)
+  static const Color softGrey       = Color(0xFFCFCFCF);  // text / neutral (was cream)
 
-  // Backgrounds (keep cosmic dark feel, tinted with new palette)
-  static const Color background = Color(0xFF040F08);
-  static const Color backgroundSecondary = Color(0xFF081A0E);
+  // ── Backgrounds ──────────────────────────────────────────────────────────
+  static const Color background          = Color(0xFF05070D);
+  static const Color backgroundSecondary = Color(0xFF080C14);
 
-  // Aliases for easy migration
-  static const Color cosmicPurple = tealBlue;
-  static const Color nebulaBlue = oliveGreen;
-  static const Color stardustGold = cream;
-  static const Color cosmicGreen = oliveGreen;
-  static const Color deepViolet = forestGreen;
+  // ── Legacy aliases (keep so existing screens compile unchanged) ──────────
+  static const Color forestGreen  = mutedOlive;
+  static const Color oliveGreen   = neonMoss;
+  static const Color cream        = softGrey;
+  static const Color dustyRose    = Color(0xFF5A7D6A);   // mapped to mutedOlive
+  static const Color tealBlue     = electricCyan;
 
-  // Glass effect
-  static const Color glassWhite = Color(0x0DFFFFFF);
-  static const Color glassBorder = Color(0x26FFFFFF);
+  static const Color cosmicPurple  = electricCyan;
+  static const Color nebulaBlue    = neonMoss;
+  static const Color stardustGold  = neonMoss;           // stardust now glows neon moss
+  static const Color cosmicGreen   = neonMoss;
+  static const Color deepViolet    = mutedOlive;
+
+  // ── Glass ─────────────────────────────────────────────────────────────────
+  static const Color glassWhite       = Color(0x0DFFFFFF);
+  static const Color glassBorder      = Color(0x26FFFFFF);
   static const Color glassWhiteStrong = Color(0x1AFFFFFF);
 
-  // Text
-  static const Color textPrimary = Color(0xFFF7F4D5);    // cream
-  static const Color textSecondary = Color(0xFFB8C99A);  // light olive
-  static const Color textMuted = Color(0xFF6B8A72);
+  // ── Text ──────────────────────────────────────────────────────────────────
+  static const Color textPrimary   = Color(0xFFCFCFCF);   // softGrey
+  static const Color textSecondary = Color(0xFF9ECFB8);   // mid tone between neonMoss & softGrey
+  static const Color textMuted     = Color(0xFF5A7D6A);   // mutedOlive
 
-  // Status
-  static const Color success = Color(0xFF839958);
-  static const Color warning = Color(0xFFD3968C);
-  static const Color error = Color(0xFFEF476F);
+  // ── Status ────────────────────────────────────────────────────────────────
+  static const Color success = neonMoss;
+  static const Color warning = Color(0xFF00E5FF);
+  static const Color error   = Color(0xFFEF476F);
 
-  // Star colors for animation
+  // ── Star/particle colors ──────────────────────────────────────────────────
   static const List<Color> starColors = [
-    Color(0xFFF7F4D5),
-    Color(0xFF839958),
-    Color(0xFF105666),
-    Color(0xFF0A3323),
-    Color(0xFFD3968C),
+    Color(0xFF7CFFB2),   // neonMoss
+    Color(0xFF00E5FF),   // electricCyan
+    Color(0xFFCFCFCF),   // softGrey
+    Color(0xFF5A7D6A),   // mutedOlive
+    Color(0xFF05070D),   // midnightBlack (dark star)
   ];
 }

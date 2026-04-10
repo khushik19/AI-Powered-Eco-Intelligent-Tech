@@ -11,6 +11,8 @@ import '../chatbot/chatbot_screen.dart';
 import '../profile/profile_screen.dart';
 import 'meet_the_stars_screen.dart';
 
+// ... existing imports
+
 class HomeScreen extends StatefulWidget {
   final Map<String, dynamic> userData;
   const HomeScreen({super.key, required this.userData});
@@ -70,14 +72,16 @@ class _HomeScreenState extends State<HomeScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Nebula chat bar (renamed from EcoGPT)
+                  // Nebula chat bar
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: GlassCard(
+                      // UPDATED Navigator.push below:
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const ChatbotScreen()),
+                          builder: (_) => ChatbotScreen(userData: widget.userData),
+                        ),
                       ),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 14),
@@ -109,7 +113,6 @@ class _HomeScreenState extends State<HomeScreen>
                             ),
                           ),
                           const Spacer(),
-                          // Arrow right instead of open_in_new
                           const Icon(Icons.arrow_forward,
                               color: AppColors.oliveGreen, size: 18),
                         ],
