@@ -80,22 +80,24 @@ def _update_streak(user_id: str):
 
 def _update_accreditation_tier(college_id: str):
     """
-    Colleges move through tiers as they earn accreditation score:
-    0-99: Seedling | 100-199: Silver | 200-499: Gold | 500+: Platinum
+    Updates the college's accreditation tier based on their accreditation score.
+    Tiers: seedling -> sapling -> tree -> forest -> ecosystem
     """
     try:
         college = db.collection("colleges").document(college_id).get().to_dict()
         if not college:
             return
         score = college.get("accreditationScore", 0)
-        if score >= 500:
-            tier = "platinum"
+        if score >= 1000:
+            tier = "ecosystem"
+        elif score >= 500:
+            tier = "forest"
         elif score >= 200:
-            tier = "gold"
-        elif score >= 100:
-            tier = "silver"
+            tier = "tree"
+        elif score >= 50:
+            tier = "sapling"
         else:
-            tier = "seedling"   
+            tier = "seedling"
         db.collection("colleges").document(college_id).update({"accreditationTier": tier})
     except Exception as e:
         print(f"Tier update failed: {e}")
