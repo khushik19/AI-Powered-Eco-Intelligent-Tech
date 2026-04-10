@@ -161,3 +161,36 @@ def get_recommendations(data: dict) -> list:
             "Install solar-powered lighting in common areas",
             "Implement a rainwater harvesting system"
         ]
+
+
+def chat_with_openrouter(query: str, history: list = []) -> str:
+    """
+    Eco-chatbot that handles user queries about sustainability.
+    """
+    system_prompt = (
+        "You are EcoGPT, a friendly sustainability expert for the Clean Cosmos app. "
+        "Keep your answers helpful, concise, and focused on environmental impact."
+    )
+    
+    messages = [{"role": "system", "content": system_prompt}]
+    for msg in history:
+        messages.append(msg)
+    messages.append({"role": "user", "content": query})
+
+    try:
+        payload = {
+            "model": OPENROUTER_MODEL,
+            "messages": messages,
+            "max_tokens": 1024,
+        }
+        res = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=HEADERS,
+            json=payload,
+            timeout=30
+        )
+        res.raise_for_status()
+        return res.json()["choices"][0]["message"]["content"].strip()
+    except Exception as e:
+        print(f"[AI Error] Chat failed: {e}")
+        return "I'm sorry, I'm having trouble connecting to my eco-brain right now. Try again later!"
