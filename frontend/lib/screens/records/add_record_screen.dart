@@ -106,7 +106,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
           ? '${_titleController.text.trim()}: ${_descController.text.trim()}'
           : '${_selectedActivity ?? ''}: ${_descController.text.trim()}';
 
-      // Submit with verifying status
+      // Submit — AI validates image + description, may throw SubmissionRejectedException
       final result = await ApiService.instance.submitAction(
         userId: widget.userData['uid'] as String? ??
             widget.userData['id'] as String? ??
@@ -119,17 +119,17 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
         isPredefined: !widget.isCustom,
       );
 
-      final stardust = result['stardustAwarded'] ?? 50;
+      final stardust = result['stardustAwarded'] ?? 10;
+      final impactSummary = result['impactSummary'] as String? ?? 'Great eco action!';
 
       setState(() => _isLoading = false);
       if (mounted) {
-        _showSnack(
-          'Record submitted! Verifying your action... +$stardust stardust pending',
-          AppColors.oliveGreen,
-        );
-        await Future.delayed(const Duration(seconds: 2));
+        await _showSuccessDialog(stardust, impactSummary);
         Navigator.pop(context);
       }
+    } on SubmissionRejectedException catch (rejection) {
+      setState(() => _isLoading = false);
+      if (mounted) await _showRejectionDialog(rejection.reason);
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -146,6 +146,101 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
       SnackBar(
         content: Text(msg, style: const TextStyle(fontFamily: 'Outfit')),
         backgroundColor: color,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  Future<void> _showSuccessDialog(int stardust, String summary) async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.backgroundSecondary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('✅ Action Approved!',
+            style: TextStyle(color: AppColors.cosmicGreen, fontFamily: 'Montserrat')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(summary,
+                style: const TextStyle(color: AppColors.textPrimary, fontFamily: 'Outfit')),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: AppColors.stardustGold.withAlpha(30),
+              ),
+              child: Text(
+                '✨ +$stardust Stardust earned!',
+                style: const TextStyle(
+                  fontFamily: 'Montserrat',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: AppColors.stardustGold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Awesome! 🌟', style: TextStyle(color: AppColors.bioTeal)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showRejectionDialog(String reason) async {
+    return showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.backgroundSecondary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('❌ Submission Rejected',
+            style: TextStyle(
+                color: AppColors.reefCoral,
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Our AI reviewer could not verify this as a valid eco-action.',
+              style: TextStyle(color: AppColors.textSecondary, fontFamily: 'Outfit'),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: AppColors.reefCoral.withAlpha(25),
+                border: Border.all(color: AppColors.reefCoral.withAlpha(80)),
+              ),
+              child: Text(
+                reason,
+                style: const TextStyle(
+                    color: AppColors.textPrimary, fontFamily: 'Outfit', fontSize: 13),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Tips: Make sure your photo clearly shows the eco-activity and your description is specific.',
+              style: TextStyle(
+                  color: AppColors.textMuted, fontFamily: 'Outfit', fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Try Again', style: TextStyle(color: AppColors.bioTeal)),
+          ),
+        ],
       ),
     );
   }
