@@ -9,7 +9,6 @@ class ChatRequest(BaseModel):
     query: str
     history: list = []   
 
-
 @router.post("/message")
 async def chat(req: ChatRequest):
     response = chat_with_openrouter(req.query, req.history)
