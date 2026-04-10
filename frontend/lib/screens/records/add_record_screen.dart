@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -79,33 +80,65 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Read image bytes once — used for both Storage upload and AI analysis
       final bytes = await _mediaFile!.readAsBytes();
       final imageBase64 = base64Encode(bytes);
-
       final description = widget.isCustom
           ? '${_titleController.text.trim()}: ${_descController.text.trim()}'
           : '${_selectedActivity ?? ''}: ${_descController.text.trim()}';
 
-      final result = await ApiService.instance.submitAction(
-        userId: widget.userData['uid'] as String? ?? widget.userData['id'] as String? ?? '',
-        collegeId: widget.userData['collegeId'] as String? ?? '',
-        role: widget.userData['role'] as String? ?? 'student',
-        imageBytes: bytes,        // for Firebase Storage upload (client-side)
-        imageBase64: imageBase64, // for AI vision model (backend)
-        description: description,
-        isPredefined: !widget.isCustom,
-      );
+      final userId     = widget.userData['uid'] as String? ?? widget.userData['id'] as String? ?? '';
+      final collegeId  = widget.userData['collegeId'] as String? ?? '';
+      final role       = widget.userData['role'] as String? ?? 'student';
 
-      final stardust = result['stardustAwarded'] ?? 50;
-      final summary = result['impactSummary'] ?? 'Great eco action!';
+      // ── Step 1: Upload image to Firebase Storage (client-side) ──────────────
+      String imageUrl = '';
+      try {
+        imageUrl = await ApiService.instance.uploadImage(bytes, userId);
+      } catch (e) {
+        debugPrint('Image upload non-fatal: $e');
+      }
 
+      // ── Step 2: Save to Firestore IMMEDIATELY with status=verifying ─────────
+      // User sees success right now — no waiting for AI!
+      final submissionDoc = <String, dynamic>{
+        'userId':          userId,
+        'collegeId':       collegeId,
+        'role':            role,
+        'description':     description,
+        'imageUrl':        imageUrl,
+        'isPredefined':    !widget.isCustom,
+        'status':          'verifying',   // ← shown as pending badge in UI
+        'verified':        false,
+        'stardustAwarded': 0,             // backend will fill real value
+        'actionType':      'other',
+        'co2ReducedKg':    0,
+        'impactSummary':   'AI is reviewing your submission...',
+        'createdAt':       DateTime.now().toUtc().toIso8601String(),
+      };
+
+      final docRef = await FirebaseFirestore.instance
+          .collection('submissions')
+          .add(submissionDoc);
+      final submissionId = docRef.id;
+
+      // ── Step 3: Show success & navigate away immediately ────────────────────
       setState(() => _isLoading = false);
       if (mounted) {
-        _showSnack('🌟 Activity recorded! +$stardust Stardust earned! $summary', AppColors.cosmicGreen);
+        _showSnack('✅ Submitted! AI is verifying your activity in the background...', AppColors.cosmicGreen);
         await Future.delayed(const Duration(seconds: 2));
         Navigator.pop(context);
       }
+
+      // ── Step 4: Fire-and-forget verify request (don't await) ────────────────
+      // Backend will update the Firestore doc with real AI results
+      ApiService.instance.fireVerify(
+        submissionId: submissionId,
+        userId: userId,
+        collegeId: collegeId,
+        imageBase64: imageBase64,
+        description: description,
+      );
+
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {

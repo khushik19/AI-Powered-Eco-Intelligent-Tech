@@ -155,8 +155,8 @@ class ApiService {
 
   // ─── Submissions ───────────────────────────────────────────────────────────
 
-  /// Uploads image bytes to Firebase Storage from the client — no backend JWT needed.
-  Future<String> _uploadImageToStorage(Uint8List bytes, String userId) async {
+  /// Public: Upload image to Firebase Storage from Flutter — no backend JWT needed.
+  Future<String> uploadImage(Uint8List bytes, String userId) async {
     final ref = FirebaseStorage.instance
         .ref()
         .child('submissions')
@@ -164,6 +164,33 @@ class ApiService {
         .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
     final task = await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
     return await task.ref.getDownloadURL();
+  }
+
+  /// Fire-and-forget: POST to /submissions/verify WITHOUT awaiting the response.
+  /// The backend runs AI in a background task, updates Firestore when done.
+  void fireVerify({
+    required String submissionId,
+    required String userId,
+    required String collegeId,
+    required String imageBase64,
+    required String description,
+  }) {
+    // Intentionally NOT awaited — returns instantly
+    http.post(
+      Uri.parse('$_baseUrl/submissions/verify'),
+      headers: _headers,
+      body: jsonEncode({
+        'submissionId': submissionId,
+        'userId':       userId,
+        'collegeId':    collegeId,
+        'imageBase64':  imageBase64,
+        'description':  description,
+      }),
+    ).then((res) {
+      debugPrint('[verify] POST /submissions/verify → ${res.statusCode}');
+    }).catchError((e) {
+      debugPrint('[verify] fire-and-forget failed (non-fatal): $e');
+    });
   }
 
   /// Full submission flow — all Firebase from Flutter (bypasses Render Admin SDK JWT issues):
@@ -184,7 +211,7 @@ class ApiService {
     // Step 1 — Upload image from Flutter directly to Firebase Storage
     String imageUrl = '';
     try {
-      imageUrl = await _uploadImageToStorage(imageBytes, userId);
+      imageUrl = await uploadImage(imageBytes, userId);
     } catch (e) {
       debugPrint('Image upload failed (non-fatal): $e');
     }
