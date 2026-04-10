@@ -225,7 +225,7 @@ class _ReportScreenState extends State<ReportScreen> {
                             const SizedBox(height: 20),
 
                             // Text summary
-                            GlassCard(
+                            LiquidGlassCard(
                               padding: const EdgeInsets.all(20),
                               borderColor:
                                   AppColors.oliveGreen.withOpacity(0.3),
@@ -278,7 +278,7 @@ class _ReportScreenState extends State<ReportScreen> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              GlassCard(
+                              LiquidGlassCard(
                                 padding: const EdgeInsets.all(20),
                                 child: Column(
                                   children: _categoryBreakdown.entries
@@ -364,7 +364,7 @@ class _ReportScreenState extends State<ReportScreen> {
                               const SizedBox(height: 12),
                               ..._blindspots.map((b) => Padding(
                                     padding: const EdgeInsets.only(bottom: 10),
-                                    child: GlassCard(
+                                    child: LiquidGlassCard(
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 14),
                                       borderColor: AppColors.dustyRose
@@ -425,7 +425,7 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GlassCard(
+      child: LiquidGlassCard(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         borderColor: color.withOpacity(0.3),
         child: Column(

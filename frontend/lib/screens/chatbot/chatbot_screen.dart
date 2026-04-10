@@ -161,7 +161,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               // Input bar — arrow right
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: GlassCard(
+                child: LiquidGlassCard(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 8),
                   borderColor: AppColors.oliveGreen.withOpacity(0.3),
@@ -253,7 +253,7 @@ class _SuggestionsView extends StatelessWidget {
           ...suggestions.asMap().entries.map((entry) {
             final i = entry.key;
             final s = entry.value;
-            return GlassCard(
+            return LiquidGlassCard(
               margin: const EdgeInsets.only(bottom: 10),
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

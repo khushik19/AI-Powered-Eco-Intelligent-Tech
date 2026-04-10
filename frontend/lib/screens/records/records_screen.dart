@@ -1,11 +1,8 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../../config/app_colors.dart';
 import '../../config/constants.dart';
 import '../../services/api_service.dart';
-import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
 import 'add_record_screen.dart';
 import 'all_records_screen.dart';
@@ -23,18 +20,18 @@ class _RecordsScreenState extends State<RecordsScreen> {
   List<Map<String, dynamic>> _recent = [];
   bool _isLoading = true;
 
-  static const _actionEmoji = {
-    'solar': '☀️',
-    'composting': '🌿',
-    'recycling': '♻️',
-    'eWaste': '🔌',
-    'water': '💧',
-    'energy': '💡',
-    'transport': '🚲',
-    'cutsWaste': '🗑️',
-    'optimizesResources': '⚡',
-    'lowersEmissions': '🌱',
-    'other': '🌍',
+  static const _actionIcons = <String, IconData>{
+    'solar': Icons.wb_sunny_outlined,
+    'composting': Icons.compost,
+    'recycling': Icons.recycling,
+    'eWaste': Icons.devices_outlined,
+    'water': Icons.water_drop_outlined,
+    'energy': Icons.bolt_outlined,
+    'transport': Icons.directions_bike_outlined,
+    'cutsWaste': Icons.delete_outline,
+    'optimizesResources': Icons.water_outlined,
+    'lowersEmissions': Icons.eco,
+    'other': Icons.star_outline,
   };
 
   @override
@@ -51,8 +48,9 @@ class _RecordsScreenState extends State<RecordsScreen> {
     }
     try {
       final dash = await ApiService.instance.getStudentDashboard(uid);
-      final submissions = (dash['submissions'] as List<dynamic>? ?? [])
-          .cast<Map<String, dynamic>>();
+      final submissions =
+          (dash['submissions'] as List<dynamic>? ?? [])
+              .cast<Map<String, dynamic>>();
       setState(() {
         _recent = submissions.take(3).toList();
         _isLoading = false;
@@ -67,14 +65,14 @@ class _RecordsScreenState extends State<RecordsScreen> {
       case 'recycling':
       case 'cutsWaste':
       case 'composting':
-        return AppColors.neonMoss;
+        return AppColors.cosmicGreen;
       case 'water':
       case 'optimizesResources':
       case 'energy':
       case 'solar':
-        return AppColors.electricCyan;
+        return AppColors.bioTeal;
       default:
-        return AppColors.textMuted;
+        return AppColors.cosmicPurple;
     }
   }
 
@@ -100,7 +98,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                   ),
                 ).animate().fadeIn(),
                 const SizedBox(height: 4),
-                Text(
+                const Text(
                   'Every action is a star in your cosmos.',
                   style: TextStyle(
                     fontFamily: 'Outfit',
@@ -111,18 +109,18 @@ class _RecordsScreenState extends State<RecordsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Recent Activity header with View All ──────────────────
+                  // ── Recent header + View All ──────────────────────────────
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      const Text(
                         'RECENT ACTIVITY',
                         style: TextStyle(
                           fontFamily: 'Montserrat',
@@ -141,12 +139,12 @@ class _RecordsScreenState extends State<RecordsScreen> {
                             ),
                           ),
                         ),
-                        child: Text(
-                          'View All →',
+                        child: const Text(
+                          'View All',
                           style: TextStyle(
                             fontFamily: 'Outfit',
                             fontSize: 12,
-                            color: AppColors.neonMoss,
+                            color: AppColors.bioTeal,
                           ),
                         ),
                       ),
@@ -154,26 +152,26 @@ class _RecordsScreenState extends State<RecordsScreen> {
                   ).animate().fadeIn(delay: 200.ms),
                   const SizedBox(height: 12),
 
-                  // ── Recent activity cards ─────────────────────────────────
+                  // ── Recent cards ──────────────────────────────────────────
                   if (_isLoading)
                     const Center(
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 16),
                         child: CircularProgressIndicator(
-                            color: AppColors.neonMoss, strokeWidth: 2),
+                            color: AppColors.bioTeal, strokeWidth: 2),
                       ),
                     )
                   else if (_recent.isEmpty)
-                    GlassCard(
+                    LiquidGlassCard(
                       padding: const EdgeInsets.symmetric(
                           vertical: 24, horizontal: 20),
-                      borderColor: AppColors.neonMoss.withOpacity(0.2),
-                      child: Column(
+                      borderColor: AppColors.bioTeal.withOpacity(0.2),
+                      child: const Column(
                         children: [
-                          const Icon(Icons.eco,
-                              color: AppColors.neonMoss, size: 36),
-                          const SizedBox(height: 10),
-                          const Text(
+                          Icon(Icons.eco,
+                              color: AppColors.bioTeal, size: 36),
+                          SizedBox(height: 10),
+                          Text(
                             'No activities yet!',
                             style: TextStyle(
                               fontFamily: 'Montserrat',
@@ -182,7 +180,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Start an action below to earn your first Stardust',
                             textAlign: TextAlign.center,
@@ -199,8 +197,10 @@ class _RecordsScreenState extends State<RecordsScreen> {
                     ..._recent.asMap().entries.map((entry) {
                       final i = entry.key;
                       final r = entry.value;
-                      final actionType = r['actionType'] as String? ?? 'other';
-                      final emoji = _actionEmoji[actionType] ?? '🌍';
+                      final actionType =
+                          r['actionType'] as String? ?? 'other';
+                      final icon =
+                          _actionIcons[actionType] ?? Icons.star_outline;
                       final stardust =
                           (r['stardustAwarded'] as num?)?.toInt() ?? 0;
                       final date = (r['createdAt'] as String? ?? '')
@@ -214,7 +214,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _RecordCard(
-                          emoji: emoji,
+                          actionIcon: icon,
                           title: description,
                           category: actionType,
                           stardust: stardust,
@@ -222,15 +222,15 @@ class _RecordsScreenState extends State<RecordsScreen> {
                           color: color,
                           status: status,
                         ).animate().fadeIn(
-                            delay:
-                                Duration(milliseconds: 300 + i * 100)),
+                            delay: Duration(
+                                milliseconds: 300 + i * 100)),
                       );
                     }),
 
                   const SizedBox(height: 20),
 
-                  // ── VIEW REPORT — full prominent card ─────────────────────
-                  Text(
+                  // ── View Impact Report ────────────────────────────────────
+                  const Text(
                     'YOUR IMPACT',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
@@ -242,63 +242,55 @@ class _RecordsScreenState extends State<RecordsScreen> {
                   ).animate().fadeIn(delay: 400.ms),
                   const SizedBox(height: 12),
 
-                  GlassCard(
+                  LiquidGlassCard(
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ReportScreen(userData: widget.userData),
+                        builder: (_) =>
+                            ReportScreen(userData: widget.userData),
                       ),
                     ),
                     padding: const EdgeInsets.all(22),
-                    borderColor: AppColors.electricCyan.withOpacity(0.35),
+                    borderColor: AppColors.bioTeal.withOpacity(0.35),
                     child: Row(
                       children: [
-                        // Left: icon in glowing circle
                         Container(
                           width: 56,
                           height: 56,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: const LinearGradient(
-                              colors: [
-                                AppColors.electricCyan,
-                                AppColors.neonMoss,
-                              ],
+                              colors: [AppColors.bioTeal, AppColors.cosmicGreen],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.electricCyan.withOpacity(0.35),
+                                color: AppColors.bioTeal.withOpacity(0.35),
                                 blurRadius: 18,
-                                spreadRadius: 1,
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.bar_chart_rounded,
-                            color: AppColors.midnightBlack,
-                            size: 28,
-                          ),
+                          child: const Icon(Icons.bar_chart_rounded,
+                              color: AppColors.midnightBlack, size: 28),
                         ),
                         const SizedBox(width: 18),
-                        // Right: text
-                        Expanded(
+                        const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'View Impact Report',
                                 style: TextStyle(
                                   fontFamily: 'Montserrat',
-                                  fontSize: 16,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimary,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
-                                'See your CO₂ saved, stardust earned\nand full sustainability breakdown.',
+                                'CO2 saved, stardust earned\nand full sustainability breakdown.',
                                 style: TextStyle(
                                   fontFamily: 'Outfit',
                                   fontSize: 12,
@@ -309,23 +301,16 @@ class _RecordsScreenState extends State<RecordsScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          color: AppColors.electricCyan,
-                          size: 16,
-                        ),
+                        const Icon(Icons.arrow_forward_ios,
+                            color: AppColors.bioTeal, size: 16),
                       ],
                     ),
-                  )
-                      .animate()
-                      .fadeIn(delay: 450.ms)
-                      .slideY(begin: 0.05, end: 0),
+                  ).animate().fadeIn(delay: 450.ms),
 
                   const SizedBox(height: 28),
 
                   // ── Add New Record ────────────────────────────────────────
-                  Text(
+                  const Text(
                     'ADD NEW RECORD',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
@@ -341,9 +326,21 @@ class _RecordsScreenState extends State<RecordsScreen> {
                     final i = entry.key;
                     final cat = entry.value;
                     final color = Color(cat['color'] as int);
+                    // Pick an icon for each category
+                    final IconData catIcon;
+                    switch (cat['id'] as String) {
+                      case 'cut_waste':
+                        catIcon = Icons.recycling;
+                        break;
+                      case 'optimize_resources':
+                        catIcon = Icons.water_drop_outlined;
+                        break;
+                      default:
+                        catIcon = Icons.eco;
+                    }
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: GlassCard(
+                      child: LiquidGlassCard(
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -364,12 +361,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                                 borderRadius: BorderRadius.circular(12),
                                 color: color.withOpacity(0.15),
                               ),
-                              child: Center(
-                                child: Text(
-                                  cat['icon'] as String,
-                                  style: const TextStyle(fontSize: 22),
-                                ),
-                              ),
+                              child: Icon(catIcon, color: color, size: 24),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -403,13 +395,14 @@ class _RecordsScreenState extends State<RecordsScreen> {
                       )
                           .animate()
                           .fadeIn(
-                              delay:
-                                  Duration(milliseconds: 500 + i * 100))
+                              delay: Duration(
+                                  milliseconds: 500 + i * 100))
                           .slideX(begin: 0.05, end: 0),
                     );
                   }),
 
-                  GlassButton(
+                  // Add your own activity
+                  AppButton(
                     text: '+ Add Your Own Activity',
                     isOutline: true,
                     color: AppColors.softGrey,
@@ -423,7 +416,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
                       ),
                     ).then((_) => _loadRecentActivity()),
                   ).animate().fadeIn(delay: 800.ms),
-                  const SizedBox(height: 160),
+                  const SizedBox(height: 120),
                 ],
               ),
             ),
@@ -435,12 +428,13 @@ class _RecordsScreenState extends State<RecordsScreen> {
 }
 
 class _RecordCard extends StatelessWidget {
-  final String emoji, title, category, date, status;
+  final IconData actionIcon;
+  final String title, category, date, status;
   final int stardust;
   final Color color;
 
   const _RecordCard({
-    required this.emoji,
+    required this.actionIcon,
     required this.title,
     required this.category,
     required this.stardust,
@@ -452,12 +446,20 @@ class _RecordCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isVerifying = status == 'verifying' || status == 'pending';
-    return GlassCard(
+    return LiquidGlassCard(
       padding: const EdgeInsets.all(16),
       borderColor: color.withOpacity(0.2),
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 24)),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withOpacity(0.15),
+            ),
+            child: Icon(actionIcon, color: color, size: 20),
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -475,7 +477,7 @@ class _RecordCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '$category · $date',
+                  '$category  $date',
                   style: const TextStyle(
                     fontFamily: 'Outfit',
                     fontSize: 12,
@@ -492,16 +494,16 @@ class _RecordCard extends StatelessWidget {
                           height: 10,
                           child: CircularProgressIndicator(
                             strokeWidth: 1.5,
-                            color: AppColors.electricCyan,
+                            color: AppColors.bioTeal,
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
+                        const Text(
                           'Verifying...',
                           style: TextStyle(
                             fontFamily: 'Outfit',
                             fontSize: 11,
-                            color: AppColors.electricCyan,
+                            color: AppColors.bioTeal,
                           ),
                         ),
                       ],
@@ -515,16 +517,15 @@ class _RecordCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               color: isVerifying
-                  ? AppColors.electricCyan.withOpacity(0.12)
-                  : AppColors.neonMoss.withOpacity(0.15),
+                  ? AppColors.bioTeal.withOpacity(0.12)
+                  : AppColors.cosmicGreen.withOpacity(0.15),
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   isVerifying ? Icons.hourglass_top : Icons.star,
-                  color: isVerifying
-                      ? AppColors.electricCyan
-                      : AppColors.neonMoss,
+                  color: isVerifying ? AppColors.bioTeal : AppColors.cosmicGreen,
                   size: 12,
                 ),
                 const SizedBox(width: 4),
@@ -535,8 +536,8 @@ class _RecordCard extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: isVerifying
-                        ? AppColors.electricCyan
-                        : AppColors.neonMoss,
+                        ? AppColors.bioTeal
+                        : AppColors.cosmicGreen,
                   ),
                 ),
               ],

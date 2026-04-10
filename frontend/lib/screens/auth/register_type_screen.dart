@@ -76,7 +76,7 @@ class RegisterTypeScreen extends StatelessWidget {
                   final iconData = t['iconData'] as IconData;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: GlassCard(
+                    child: LiquidGlassCard(
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(

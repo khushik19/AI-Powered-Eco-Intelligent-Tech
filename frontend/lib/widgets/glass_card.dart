@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 
-// ignore: unused_import
-import 'liquid_glass_card.dart'; // kept for backward-compat re-exports
+// Re-export so screens importing glass_card.dart get LiquidGlassCard too
+export 'liquid_glass_card.dart' show LiquidGlassCard, LiquidGlassButton;
 
-/// A glassmorphism card. Accepts all the params used across the app.
+/// A glassmorphism card used throughout the app.
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -51,15 +51,17 @@ class GlassCard extends StatelessWidget {
   }
 }
 
-/// A styled action button — solid or outline variant.
-class GlassButton extends StatelessWidget {
+/// Styled action button used with named params across the app.
+/// Usage:  AppButton(text: 'Sign Out', onTap: ..., isOutline: true, color: ...)
+/// Also exported as the default pattern replacing ElevatedButton(text:, onTap:)
+class AppButton extends StatelessWidget {
   final String text;
   final VoidCallback onTap;
   final IconData? icon;
   final Color? color;
   final bool isOutline;
 
-  const GlassButton({
+  const AppButton({
     super.key,
     required this.text,
     required this.onTap,
@@ -71,32 +73,27 @@ class GlassButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = color ?? AppColors.bioTeal;
-    final label = icon != null
-        ? Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 18, color: isOutline ? c : AppColors.midnightBlack),
-              const SizedBox(width: 8),
-              Text(
-                text,
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                  color: isOutline ? c : AppColors.midnightBlack,
-                ),
-              ),
-            ],
-          )
-        : Text(
-            text,
-            style: TextStyle(
-              fontFamily: 'Montserrat',
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-              color: isOutline ? c : AppColors.midnightBlack,
-            ),
-          );
+
+    Widget label = Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 18,
+              color: isOutline ? c : AppColors.midnightBlack),
+          const SizedBox(width: 8),
+        ],
+        Text(
+          text,
+          style: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: isOutline ? c : AppColors.midnightBlack,
+          ),
+        ),
+      ],
+    );
 
     if (isOutline) {
       return SizedBox(

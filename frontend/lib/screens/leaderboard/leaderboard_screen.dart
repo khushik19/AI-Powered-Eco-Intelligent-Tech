@@ -15,26 +15,24 @@ class LeaderboardScreen extends StatefulWidget {
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   String _filter = 'Global';
-  // Country removed — backend only supports college_id, city, state filters
   final List<String> _filters = ['Global', 'Institution', 'City', 'State'];
 
   List<Map<String, dynamic>> _data = [];
   bool _isLoading = true;
   String? _error;
 
-  // Emojis assigned by rank position
-  static const _rankEmojis = ['', '🌟', '⭐', '✨', '💫', '🌙', '🔥', '🌿', '💎', '🚀'];
-  
   @override
   void initState() {
     super.initState();
     _fetchLeaderboard();
   }
 
-  /// Fetches leaderboard with params based on the currently selected filter.
   Future<void> _fetchLeaderboard({String? filter}) async {
     final activeFilter = filter ?? _filter;
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       String? collegeId;
       String? city;
@@ -50,7 +48,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         case 'State':
           state = widget.userData['state'] as String?;
           break;
-        default: // Global — no filter
+        default:
           break;
       }
 
@@ -59,23 +57,24 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         city: city,
         state: state,
       );
-      setState(() { _data = results; _isLoading = false; });
+      setState(() {
+        _data = results;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
-        _error = 'Failed to load rankings.${
-          _filter != 'Global' ? '\nTry a different filter or check your profile has ${_filter.toLowerCase()} info.' : ''
-        }';
+        _error =
+            'Failed to load rankings.${_filter != 'Global' ? '\nTry a different filter.' : ''}';
         _isLoading = false;
       });
     }
   }
 
-  /// Returns a subtitle showing which value is being used to filter
   String _filterHint() {
     switch (_filter) {
       case 'Institution':
-        final col = widget.userData['collegeId'] as String?
-            ?? widget.userData['institution'] as String?;
+        final col = widget.userData['collegeId'] as String? ??
+            widget.userData['institution'] as String?;
         return col != null ? 'Showing: $col' : 'No institution in your profile';
       case 'City':
         final city = widget.userData['city'] as String?;
@@ -92,7 +91,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const SafeArea(
-        child: Center(child: CircularProgressIndicator(color: AppColors.nebulaBlue)),
+        child: Center(
+            child: CircularProgressIndicator(color: AppColors.bioTeal)),
       );
     }
     if (_error != null) {
@@ -101,19 +101,23 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('⚠️', style: TextStyle(fontSize: 40)),
+              const Icon(Icons.warning_amber_outlined,
+                  color: AppColors.textMuted, size: 48),
               const SizedBox(height: 12),
-              Text(_error!, textAlign: TextAlign.center,
-                  style: const TextStyle(fontFamily: 'Outfit', color: AppColors.textSecondary)),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontFamily: 'Outfit', color: AppColors.textSecondary),
+              ),
               const SizedBox(height: 16),
-              GlassButton(text: 'Retry', onTap: _fetchLeaderboard),
+              AppButton(text: 'Retry', onTap: _fetchLeaderboard),
             ],
           ),
         ),
       );
     }
 
-    // Use real data from API
     final top3 = _data.take(3).toList();
     final rest = _data.skip(3).toList();
 
@@ -131,7 +135,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     colors: [AppColors.stardustGold, AppColors.cosmicPurple],
                   ).createShader(b),
                   child: const Text(
-                    'Cosmos\nRankings 🏆',
+                    'Cosmos\nRankings',
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontSize: 30,
@@ -153,7 +157,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       final isActive = _filter == f;
                       return GestureDetector(
                         onTap: () {
-                          if (_filter == f) return; // no-op if already selected
+                          if (_filter == f) return;
                           setState(() => _filter = f);
                           _fetchLeaderboard(filter: f);
                         },
@@ -190,12 +194,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     },
                   ),
                 ).animate().fadeIn(delay: 200.ms),
-                // Show active filter hint
                 if (_filter != 'Global') ...[
                   const SizedBox(height: 8),
                   Text(
                     _filterHint(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Outfit',
                       fontSize: 11,
                       color: AppColors.cosmicPurple,
@@ -205,82 +208,77 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  // Only show podium if we have at least 3 entries
                   if (top3.length >= 3)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      // 2nd place
-                      Expanded(
-                        child: _PodiumCard(
-                          rank: 2,
-                          name: top3[1]['name'] as String? ?? 'Unknown',
-                          stardust: (top3[1]['stardust'] as num?)?.toInt() ?? 0,
-                          emoji: _rankEmojis[1],
-                          height: 120,
-                          color: const Color(0xFFC0C0C0),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: _PodiumCard(
+                            rank: 2,
+                            name: top3[1]['name'] as String? ?? 'Unknown',
+                            stardust:
+                                (top3[1]['stardust'] as num?)?.toInt() ?? 0,
+                            height: 120,
+                            color: const Color(0xFFC0C0C0),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      // 1st place
-                      Expanded(
-                        child: _PodiumCard(
-                          rank: 1,
-                          name: top3[0]['name'] as String? ?? 'Unknown',
-                          stardust: (top3[0]['stardust'] as num?)?.toInt() ?? 0,
-                          emoji: _rankEmojis[0],
-                          height: 160,
-                          color: AppColors.stardustGold,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _PodiumCard(
+                            rank: 1,
+                            name: top3[0]['name'] as String? ?? 'Unknown',
+                            stardust:
+                                (top3[0]['stardust'] as num?)?.toInt() ?? 0,
+                            height: 160,
+                            color: AppColors.stardustGold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      // 3rd place
-                      Expanded(
-                        child: _PodiumCard(
-                          rank: 3,
-                          name: top3[2]['name'] as String? ?? 'Unknown',
-                          stardust: (top3[2]['stardust'] as num?)?.toInt() ?? 0,
-                          emoji: _rankEmojis[2],
-                          height: 100,
-                          color: const Color(0xFFCD7F32),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _PodiumCard(
+                            rank: 3,
+                            name: top3[2]['name'] as String? ?? 'Unknown',
+                            stardust:
+                                (top3[2]['stardust'] as num?)?.toInt() ?? 0,
+                            height: 100,
+                            color: const Color(0xFFCD7F32),
+                          ),
                         ),
-                      ),
-                    ],
-                  ).animate().fadeIn(delay: 300.ms),
-                  const SizedBox(height: 24),
-                  // Rest of rankings
+                      ],
+                    ).animate().fadeIn(delay: 300.ms),
+                  const SizedBox(height: 20),
                   ...rest.asMap().entries.map((entry) {
                     final i = entry.key;
                     final r = entry.value;
                     final rank = i + 4;
-                    final emoji = _rankEmojis[rank < _rankEmojis.length ? rank : _rankEmojis.length - 1];
-                    final isUser = r['name'] == widget.userData['name'];
-                    final stardust = (r['stardust'] as num?)?.toInt() ?? 0;
-                    final institution = r['collegeId'] as String? ?? r['institution'] as String? ?? '—';
+                    final isUser =
+                        r['name'] == widget.userData['name'];
+                    final stardust =
+                        (r['stardust'] as num?)?.toInt() ?? 0;
+                    final institution = r['collegeId'] as String? ??
+                        r['institution'] as String? ??
+                        '—';
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: GlassCard(
+                      child: LiquidGlassCard(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 14),
                         borderColor: isUser
-                            ? AppColors.nebulaBlue.withOpacity(0.4)
+                            ? AppColors.bioTeal.withOpacity(0.4)
                             : AppColors.glassBorder,
-                        fillColor: isUser
-                            ? AppColors.nebulaBlue.withOpacity(0.08)
-                            : AppColors.glassWhite,
                         child: Row(
                           children: [
                             SizedBox(
-                              width: 32,
+                              width: 36,
                               child: Text(
                                 '#$rank',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontFamily: 'Montserrat',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -288,8 +286,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                 ),
                               ),
                             ),
-                            Text(emoji, style: const TextStyle(fontSize: 20)),
-                            const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,7 +297,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                       color: isUser
-                                          ? AppColors.nebulaBlue
+                                          ? AppColors.bioTeal
                                           : AppColors.textPrimary,
                                     ),
                                   ),
@@ -316,24 +312,30 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                 ],
                               ),
                             ),
-                            Text(
-                              '✨ $stardust',
-                              style: const TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.stardustGold,
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.star,
+                                    color: AppColors.stardustGold, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$stardust',
+                                  style: const TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.stardustGold,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      )
-                          .animate()
-                          .fadeIn(
-                              delay: Duration(milliseconds: 400 + i * 80)),
+                      ).animate().fadeIn(
+                          delay: Duration(milliseconds: 400 + i * 60)),
                     );
                   }),
-                  const SizedBox(height: 160),
+                  const SizedBox(height: 120),
                 ],
               ),
             ),
@@ -346,7 +348,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
 class _PodiumCard extends StatelessWidget {
   final int rank;
-  final String name, emoji;
+  final String name;
   final int stardust;
   final double height;
   final Color color;
@@ -354,7 +356,6 @@ class _PodiumCard extends StatelessWidget {
   const _PodiumCard({
     required this.rank,
     required this.name,
-    required this.emoji,
     required this.stardust,
     required this.height,
     required this.color,
@@ -364,7 +365,12 @@ class _PodiumCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 28)),
+        // Rank crown icon instead of emoji
+        Icon(
+          rank == 1 ? Icons.emoji_events : Icons.star,
+          color: color,
+          size: rank == 1 ? 32 : 24,
+        ),
         const SizedBox(height: 4),
         Text(
           name.split(' ').first,
@@ -381,7 +387,8 @@ class _PodiumCard extends StatelessWidget {
         Container(
           height: height,
           decoration: BoxDecoration(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12)),
             color: color.withOpacity(0.15),
             border: Border.all(color: color.withOpacity(0.4)),
           ),
@@ -397,13 +404,20 @@ class _PodiumCard extends StatelessWidget {
                   color: color,
                 ),
               ),
-              Text(
-                '✨$stardust',
-                style: const TextStyle(
-                  fontFamily: 'Outfit',
-                  fontSize: 11,
-                  color: AppColors.stardustGold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.star, color: AppColors.stardustGold, size: 12),
+                  const SizedBox(width: 2),
+                  Text(
+                    '$stardust',
+                    style: const TextStyle(
+                      fontFamily: 'Outfit',
+                      fontSize: 11,
+                      color: AppColors.stardustGold,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

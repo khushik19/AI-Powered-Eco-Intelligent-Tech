@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../config/app_colors.dart';
 import '../../services/auth_service.dart';
-import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
 import '../auth/login_screen.dart';
 
@@ -25,7 +24,7 @@ class ProfileScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: const LinearGradient(
-                  colors: [AppColors.cosmicPurple, AppColors.nebulaBlue],
+                  colors: [AppColors.cosmicPurple, AppColors.bioTeal],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -38,7 +37,9 @@ class ProfileScreen extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  (userData['name'] as String? ?? 'U').substring(0, 1).toUpperCase(),
+                  (userData['name'] as String? ?? 'U')
+                      .substring(0, 1)
+                      .toUpperCase(),
                   style: const TextStyle(
                     fontFamily: 'Montserrat',
                     fontSize: 36,
@@ -73,28 +74,28 @@ class ProfileScreen extends StatelessWidget {
                 _StatCard(
                   label: 'Stardust',
                   value: '${userData['stardust'] ?? 0}',
-                  icon: '✨',
+                  icon: Icons.star,
                   color: AppColors.stardustGold,
                 ),
                 const SizedBox(width: 12),
                 _StatCard(
                   label: 'Streak',
                   value: '${userData['weeklyStreak'] ?? 0}w',
-                  icon: '🔥',
-                  color: AppColors.cosmicGreen,
+                  icon: Icons.local_fire_department,
+                  color: AppColors.reefCoral,
                 ),
                 const SizedBox(width: 12),
                 _StatCard(
                   label: 'Actions',
                   value: '${userData['totalActions'] ?? 0}',
-                  icon: '🌱',
-                  color: AppColors.nebulaBlue,
+                  icon: Icons.eco,
+                  color: AppColors.cosmicGreen,
                 ),
               ],
             ).animate().fadeIn(delay: 400.ms),
             const SizedBox(height: 28),
-            // Profile details
-            GlassCard(
+            // Profile details card
+            LiquidGlassCard(
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
@@ -129,11 +130,20 @@ class ProfileScreen extends StatelessWidget {
                       value: userData['institution'] as String,
                     ),
                   ],
+                  if ((userData['role'] as String? ?? '').isNotEmpty) ...[
+                    _Divider(),
+                    _ProfileField(
+                      icon: Icons.badge_outlined,
+                      label: 'Role',
+                      value: _roleLabel(userData['role'] as String),
+                    ),
+                  ],
                 ],
               ),
             ).animate().fadeIn(delay: 500.ms),
             const SizedBox(height: 20),
-            GlassButton(
+            // Sign Out button
+            AppButton(
               text: 'Sign Out',
               isOutline: true,
               color: AppColors.error,
@@ -148,16 +158,30 @@ class ProfileScreen extends StatelessWidget {
                 }
               },
             ).animate().fadeIn(delay: 600.ms),
-            const SizedBox(height: 160),
+            const SizedBox(height: 120),
           ],
         ),
       ),
     );
   }
+
+  String _roleLabel(String role) {
+    switch (role) {
+      case 'individual':
+        return 'Individual';
+      case 'student_employee':
+        return 'Student / Employee';
+      case 'college_org':
+        return 'College / Organisation';
+      default:
+        return role;
+    }
+  }
 }
 
 class _StatCard extends StatelessWidget {
-  final String label, value, icon;
+  final String label, value;
+  final IconData icon;
   final Color color;
   const _StatCard({
     required this.label,
@@ -169,12 +193,12 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GlassCard(
+      child: LiquidGlassCard(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         borderColor: color.withOpacity(0.3),
         child: Column(
           children: [
-            Text(icon, style: const TextStyle(fontSize: 22)),
+            Icon(icon, color: color, size: 22),
             const SizedBox(height: 6),
             Text(
               value,
@@ -248,9 +272,6 @@ class _ProfileField extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Divider(
-      color: AppColors.glassBorder,
-      height: 1,
-    );
+    return const Divider(color: AppColors.glassBorder, height: 1);
   }
 }

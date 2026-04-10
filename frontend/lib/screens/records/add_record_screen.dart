@@ -449,7 +449,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: GlassCard(
+                            child: LiquidGlassCard(
                               onTap: () => _pickMedia(),
                               padding: const EdgeInsets.symmetric(
                                   vertical: 18),
@@ -474,7 +474,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: GlassCard(
+                            child: LiquidGlassCard(
                               onTap: () => _pickMedia(video: true),
                               padding: const EdgeInsets.symmetric(
                                   vertical: 18),
@@ -514,7 +514,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
                       const SizedBox(height: 16),
                       if (widget.isCustom)
-                        GlassCard(
+                        LiquidGlassCard(
                           padding: const EdgeInsets.all(14),
                           borderColor:
                               AppColors.cream.withOpacity(0.3),
@@ -538,6 +538,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                       const LoadingFactWidget(),
                       const SizedBox(height: 24),
                       _isLoading
+<<<<<<< HEAD
                           ? Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -558,6 +559,12 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                           : GlassButton(
                               text: 'Submit for Verification',
                               onTap: _submit,
+=======
+                          ? const Center(child: CircularProgressIndicator())
+                          : ElevatedButton(
+                              onPressed: _submit,
+                              child: const Text('Submit for Verification'),
+>>>>>>> 5a3dcc0562b66e25c69e587a381fe538f60b7cde
                             ).animate().fadeIn(delay: 600.ms),
                       const SizedBox(height: 40),
                     ],
