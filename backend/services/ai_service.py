@@ -40,11 +40,11 @@ def _get_headers() -> dict:
 
 def classify_with_openrouter(image_base64: str, description: str) -> dict:
     """
-    Classify an eco-action image using AI.
-    NEVER raises — always returns a valid dict.
-    If AI fails, returns a sensible fallback so the submission still works.
+    Classify an eco-action using AI.
+    - If image_base64 is non-empty: sends image + description to vision model
+    - If image_base64 is empty:     sends description only (text-only, faster)
+    NEVER raises — always returns a valid dict with fallback if AI fails.
     """
-    # Guard: no API key configured
     api_key = os.getenv("OPENROUTER_API_KEY", "")
     if not api_key or not api_key.strip():
         print("[AI] WARNING: OPENROUTER_API_KEY not set — using fallback.")
@@ -57,7 +57,8 @@ The app awards "stardust" points to users for sustainable actions.
 
 User description: "{description}"
 
-Analyze the image and the description carefully. Return ONLY valid JSON (no markdown, no explanation):
+{"Analyze the image and description carefully." if image_base64 else "Analyze the description and classify the eco-action."}
+Return ONLY valid JSON (no markdown, no explanation):
 {{
   "actionType": "solar|composting|recycling|eWaste|water|energy|transport|cutsWaste|optimizesResources|lowersEmissions|other",
   "stardustAwarded": <integer 10-100, higher for bigger impact>,
@@ -71,44 +72,46 @@ Analyze the image and the description carefully. Return ONLY valid JSON (no mark
   "isLegitimate": true
 }}"""
 
+    # Build message content: include image only if provided
+    if image_base64:
+        content = [
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}},
+            {"type": "text", "text": prompt}
+        ]
+    else:
+        content = prompt  # text-only — works with any model, not just vision
+
     payload = {
-        "model": model,   # vision-capable model from env (e.g. google/gemini-2.0-flash-exp:free)
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
-                    },
-                    {"type": "text", "text": prompt}
-                ]
-            }
-        ],
+        "model": model,
+        "messages": [{"role": "user", "content": content}],
         "max_tokens": 512,
     }
 
-    print(f"[AI] Classifying with model: {model}")
+    mode = "vision" if image_base64 else "text-only"
+    print(f"[AI] Classifying ({mode}) with model: {model}")
     try:
         response = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers=_get_headers(),
             json=payload,
-            timeout=25
+            timeout=20
         )
         response.raise_for_status()
         text = response.json()["choices"][0]["message"]["content"].strip()
 
-        # Extract JSON from markdown if necessary
+        # Strip markdown code fences if present
         if "```json" in text:
             text = text.split("```json")[-1].split("```")[0].strip()
         elif "```" in text:
-            text = text.split("```")[-1].split("```")[0].strip()
+            text = text.split("```")[1].strip()
 
-        return json.loads(text)
+        result = json.loads(text)
+        print(f"[AI] Classification OK: actionType={result.get('actionType')} stardust={result.get('stardustAwarded')}")
+        return result
     except Exception as e:
-        print(f"[AI Error] Classification failed: {e}")
+        print(f"[AI Error] Classification failed ({mode}): {e}")
         return _fallback_result(description)
+
 
 
 def _fallback_result(description: str) -> dict:

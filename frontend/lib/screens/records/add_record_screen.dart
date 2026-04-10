@@ -168,13 +168,16 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                           color: AppColors.textPrimary, size: 20),
                       onPressed: () => Navigator.pop(context),
                     ),
-                    Text(
-                      widget.isCustom ? 'Custom Activity' : 'Add Record',
-                      style: const TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                        color: AppColors.textPrimary,
+                    Flexible(
+                      child: Text(
+                        widget.isCustom ? 'Custom Activity' : 'Add Record',
+                        style: const TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
