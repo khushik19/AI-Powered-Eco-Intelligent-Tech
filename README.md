@@ -65,7 +65,7 @@ Powered by **OpenRouter (Gemini)**, this agent:
 ## 💰 Monetization & Impact
 * **Institutional Value:** Reduced utility bills via AI monitoring and higher national rankings (NAAC/NIRF).
 * **Student Value:** Stardust points convertible to **Academic Credits**, canteen coupons, or brand vouchers.
-* **Business Model:** * **B2B SaaS:** Subscription for University Admin Dashboards.
+* **Business Model:** 
     * **Carbon Trading:** Commission fee on aggregated Carbon Credit sales.
     * **CSR Mandates:** Corporate sponsorship for green-tech deployment in rural colleges.
 
