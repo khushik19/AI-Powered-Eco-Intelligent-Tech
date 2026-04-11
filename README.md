@@ -1,5 +1,5 @@
 # AI-Powered-Eco-Intelligent-Tech
-# ✨ Stardust: The Sustainability Ledger
+# ✨ Clean Cosmos: The Sustainability Ledger
 > **Turning Campus Actions into Quantifiable Impact using AI Vision & Carbon Math.**
 
 [![Tech Stack](https://img.shields.io/badge/Stack-Flutter%20%7C%20FastAPI%20%7C%20Firebase%20%7C%20OpenRouter-blue)](https://github.com/)
@@ -12,7 +12,7 @@ Global sustainability goals often feel out of reach because local impact is hard
 
 **The Gap:** Most existing solutions (like *Ma Petite Planète*) rely on the **Honor System** (unverified claims), lack institutional incentives (no link to NAAC/NIRF rankings), and fail to quantify real carbon savings.
 
-## 🚀 The Solution: Stardust
+## 🚀 The Solution: Clean Cosmos
 Stardust is a dual-portal, AI-powered ecosystem that gamifies sustainability for both **Institutions** and **Individuals**. 
 
 By using **Autonomous AI Vision Agents**, we move from "Trust" to "Proof." Every action—from a student cycling to a college installing solar panels—is verified, quantified into $CO_2$ metrics, and converted into **Stardust Points** and **Carbon Credit fractions**.
