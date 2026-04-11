@@ -10,7 +10,7 @@ class MeetTheStarsScreen extends StatelessWidget {
   static const _team = [
     {
       'name': 'Khushi Katiyar',
-      'role': 'Fits the Flutters',
+      'role': 'Fits the Flutter',
       'photo': 'assets/images/team_khushi.jpg',   // add your photo here
       'color': AppColors.oliveGreen,
       'bio': 'Crafting every pixel of your cosmic journey.',
