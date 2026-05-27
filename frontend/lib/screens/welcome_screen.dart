@@ -3,6 +3,8 @@ import '../config/app_colors.dart';
 import '../widgets/cosmic_background.dart';
 import 'auth/login_screen.dart';
 import 'auth/register_type_screen.dart';
+import '../services/auth_service.dart';
+import 'home/home_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -15,6 +17,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -34,6 +37,58 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   void dispose() {
     _animController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loginAsGuest() async {
+    setState(() => _isLoading = true);
+    try {
+      final userData = await AuthService.signInAnonymously();
+      if (!mounted) return;
+      if (userData != null) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => HomeScreen(userData: userData)),
+          (_) => false,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Guest login failed: $e. Falling back to offline guest session.');
+
+      final mockGuestData = {
+        'uid': 'mock_guest_${DateTime.now().millisecondsSinceEpoch}',
+        'name': 'Guest Explorer',
+        'email': 'guest@cleancosmos.app',
+        'phone': '',
+        'city': 'Cosmos',
+        'state': 'Space',
+        'country': 'Universe',
+        'institution': '',
+        'collegeId': null,
+        'role': 'individual',
+        'stardust': 0,
+        'weeklyStreak': 0,
+        'totalActions': 0,
+        'lastActionDate': null,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Connected in Offline Guest Mode', style: TextStyle(fontFamily: 'Outfit')),
+          backgroundColor: AppColors.bioTeal,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => HomeScreen(userData: mockGuestData)),
+        (_) => false,
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -115,7 +170,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   SizedBox(
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: () => Navigator.push(
+                      onPressed: _isLoading ? null : () => Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (_) => const RegisterTypeScreen()),
@@ -145,7 +200,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   SizedBox(
                     height: 56,
                     child: OutlinedButton(
-                      onPressed: () => Navigator.push(
+                      onPressed: _isLoading ? null : () => Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const LoginScreen()),
                       ),
@@ -165,6 +220,35 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           fontFamily: 'Montserrat',
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Tertiary CTA — Explore as Guest
+                  SizedBox(
+                    height: 56,
+                    child: TextButton(
+                      onPressed: _isLoading ? null : _loginAsGuest,
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.bioTeal,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.bioTeal),
+                            )
+                          : const Text(
+                              'Explore as Guest',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Montserrat',
+                                letterSpacing: 0.5,
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 32),

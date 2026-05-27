@@ -71,16 +71,50 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           state: state,
         );
       }
+
+      // If results are empty and the user is a guest explorer, trigger mock data fallback
+      if (results.isEmpty && (widget.userData['email'] == 'guest@cleancosmos.app' || widget.userData['name'] == 'Guest Explorer')) {
+        throw Exception("Empty guest database");
+      }
       
       setState(() {
         _data = results;
         _isLoading = false;
       });
     } catch (e) {
+      // Offline/Guest Fallback: Show a beautiful, populated mock leaderboard
+      final mockRankings = [
+        {'name': 'Sirius Green', 'stardust': 520, 'institution': 'MIT Manipal', 'role': 'student'},
+        {'name': 'Orion Eco', 'stardust': 480, 'institution': 'VIT Vellore', 'role': 'student'},
+        {'name': 'Vega Planet', 'stardust': 410, 'institution': 'BITS Pilani', 'role': 'student'},
+        {'name': 'Polaris Wild', 'stardust': 380, 'institution': 'MIT Manipal', 'role': 'student'},
+        {'name': 'Altair Tree', 'stardust': 320, 'institution': 'VIT Vellore', 'role': 'student'},
+        {'name': 'Rigel Sun', 'stardust': 290, 'institution': 'BITS Pilani', 'role': 'student'},
+        {'name': 'Capella Clean', 'stardust': 250, 'institution': 'MIT Manipal', 'role': 'student'},
+        {'name': 'Antares Wave', 'stardust': 190, 'institution': 'VIT Vellore', 'role': 'student'},
+      ];
+
+      final guestName = widget.userData['name'] as String? ?? 'Guest Explorer';
+      final guestStardust = (widget.userData['stardust'] as num?)?.toInt() ?? 0;
+      final guestInstitution = widget.userData['institution'] as String? ?? 'Cosmos Academy';
+
+      final List<Map<String, dynamic>> results = mockRankings.map((r) => Map<String, dynamic>.from(r)).toList();
+      
+      if (!results.any((r) => r['name'] == guestName)) {
+        results.add({
+          'name': guestName,
+          'stardust': guestStardust,
+          'institution': guestInstitution.isNotEmpty ? guestInstitution : 'Cosmos Academy',
+          'role': widget.userData['role'] as String? ?? 'individual',
+        });
+      }
+
+      results.sort((a, b) => (b['stardust'] as num).compareTo(a['stardust'] as num));
+
       setState(() {
-        _error =
-            'Failed to load rankings.${_filter != 'Global' ? '\nTry a different filter.' : ''}';
+        _data = results;
         _isLoading = false;
+        _error = null;
       });
     }
   }

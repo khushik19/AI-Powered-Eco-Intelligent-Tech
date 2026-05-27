@@ -3,6 +3,7 @@ import '../../config/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
+import '../home/home_screen.dart';
 import '../auth/login_screen.dart';
 
 class SetPasswordScreen extends StatefulWidget {
@@ -47,7 +48,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await AuthService.signUp(
+      final userData = await AuthService.signUp(
         email: widget.email,
         password: _passwordController.text,
         name: widget.name,
@@ -63,7 +64,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Account created! Please log in.',
+            'Account created successfully! Welcome to Clean Cosmos.',
             style: TextStyle(fontFamily: 'Outfit'),
           ),
           backgroundColor: AppColors.cosmicGreen,
@@ -71,10 +72,10 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
       );
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return;
-      // Redirect to login after registration
+      // Redirect directly to home screen
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(builder: (_) => HomeScreen(userData: userData)),
         (_) => false,
       );
     } catch (e) {
