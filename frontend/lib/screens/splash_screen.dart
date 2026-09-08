@@ -56,52 +56,24 @@ class _SplashScreenState extends State<SplashScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // ── Logo with pulse glow ──────────────────────────────────
+                // ── Logo without surrounding circle ─────────────────────────
                 AnimatedBuilder(
                   animation: _pulseController,
                   builder: (context, child) {
-                    return Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.electricCyan.withOpacity(
-                                0.3 + _pulseController.value * 0.4),
-                            blurRadius: 40 + _pulseController.value * 30,
-                            spreadRadius: 5,
-                          ),
-                          BoxShadow(
-                            color: AppColors.neonMoss.withOpacity(
-                                0.15 + _pulseController.value * 0.2),
-                            blurRadius: 60 + _pulseController.value * 20,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
+                    final scale = 1.0 + _pulseController.value * 0.05;
+                    return Transform.scale(
+                      scale: scale,
                       child: child,
                     );
                   },
-                  child: ClipOval(
+                  child: SizedBox(
+                    width: 130,
+                    height: 130,
                     child: Image.asset(
                       'assets/images/logo.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.electricCyan,
-                              AppColors.neonMoss,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: const Center(
-                          child: Text('🌿', style: TextStyle(fontSize: 48)),
-                        ),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Center(
+                        child: Text('🌿', style: TextStyle(fontSize: 48)),
                       ),
                     ),
                   ),
@@ -116,22 +88,17 @@ class _SplashScreenState extends State<SplashScreen>
 
                 const SizedBox(height: 32),
 
-                // ── App name gradient ─────────────────────────────────────
+                // ── App name neon rose to ice cyan gradient ────────────────
                 ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [
-                      AppColors.neonMoss,
-                      AppColors.softGrey,
-                      AppColors.electricCyan,
-                    ],
-                  ).createShader(bounds),
+                  shaderCallback: (bounds) =>
+                      AppColors.cosmicTitleGradient.createShader(bounds),
                   child: const Text(
                     'CLEAN COSMOS',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontSize: 28,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                       color: Colors.white,
                       letterSpacing: 4,
                     ),

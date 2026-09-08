@@ -105,64 +105,46 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Spacer(flex: 2),
-                  // App icon / hero
+                  // App icon / hero without surrounding circle
                   Center(
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [AppColors.bioTeal, AppColors.kelp],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.bioTeal.withOpacity(0.4),
-                            blurRadius: 30,
-                            spreadRadius: 5,
-                          ),
-                        ],
-                      ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
-                              Icons.eco,
-                              color: Colors.black,
-                              size: 52),
-                        ),
+                    child: SizedBox(
+                      width: 110,
+                      height: 110,
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(
+                            Icons.eco,
+                            color: AppColors.spruceLight,
+                            size: 60),
                       ),
                     ),
                   ),
                   const SizedBox(height: 32),
-                  const Text(
-                    'Clean Cosmos',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Montserrat',
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
                   ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [AppColors.softGrey, AppColors.bioTeal],
-                    ).createShader(bounds),
+                    shaderCallback: (bounds) =>
+                        AppColors.cosmicTitleGradient.createShader(bounds),
                     child: const Text(
-                      'Your AI-powered eco intelligence companion.\nJoin the movement for a cleaner planet.',
+                      'Clean Cosmos',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 15,
-                        fontFamily: 'Outfit',
-                        height: 1.6,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Montserrat',
+                        letterSpacing: 1.5,
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Your AI-powered eco intelligence companion.\nJoin the movement for a cleaner planet.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.textSecondary.withValues(alpha: 0.9),
+                      fontSize: 15,
+                      fontFamily: 'Outfit',
+                      height: 1.6,
                     ),
                   ),
                   const Spacer(flex: 3),

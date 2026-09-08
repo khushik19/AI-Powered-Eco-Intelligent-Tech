@@ -8,10 +8,11 @@ class AppTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.electricCyan,
-        secondary: AppColors.neonMoss,
-        surface: AppColors.backgroundSecondary,
-        error: AppColors.error,
+        primary:   AppColors.cerise,
+        secondary: AppColors.citron,
+        tertiary:  AppColors.deepBlush,
+        surface:   AppColors.backgroundSecondary,
+        error:     AppColors.cerise,
       ),
       fontFamily: 'Outfit',
       appBarTheme: const AppBarTheme(
@@ -79,8 +80,8 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.electricCyan,
-          foregroundColor: AppColors.midnightBlack,
+          backgroundColor: AppColors.cerise,
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -109,7 +110,7 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide:
-              const BorderSide(color: AppColors.electricCyan, width: 1.5),
+              const BorderSide(color: AppColors.cerise, width: 1.5),
         ),
         labelStyle: const TextStyle(
           fontFamily: 'Outfit',

@@ -42,143 +42,57 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
+      extendBody: true,
       body: CosmicBackground(
         showStardustRain: false,
-        child: IndexedStack(index: _selectedIndex, children: _pages),
-      ),
-      // Nebula floating chatbox
-      floatingActionButton: GestureDetector(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => ChatbotScreen(userData: widget.userData)),
-        ),
-        child: Container(
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(26),
-            gradient: const LinearGradient(
-              colors: [AppColors.bioTeal, AppColors.kelp],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.bioTeal.withOpacity(0.45),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.auto_awesome,
-                  color: AppColors.midnightBlack, size: 18),
-              SizedBox(width: 8),
-              Text(
-                'Nebula',
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: AppColors.midnightBlack,
+        child: Stack(
+          children: [
+            IndexedStack(index: _selectedIndex, children: _pages),
+            // Nebula FAB — liquid glass pill floating above nav
+            Positioned(
+              bottom: 100,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: _NebulaFAB(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => ChatbotScreen(userData: widget.userData)),
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        color: AppColors.backgroundSecondary,
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home,
-                label: 'Home',
-                index: 0,
-                selectedIndex: _selectedIndex,
-                onTap: () => setState(() => _selectedIndex = 0),
-              ),
-              _NavItem(
-                icon: Icons.list_alt_outlined,
-                activeIcon: Icons.list_alt,
-                label: 'Records',
-                index: 1,
-                selectedIndex: _selectedIndex,
-                onTap: () => setState(() => _selectedIndex = 1),
-              ),
-              const SizedBox(width: 60), // space for FAB
-              _NavItem(
-                icon: Icons.leaderboard_outlined,
-                activeIcon: Icons.leaderboard,
-                label: 'Ranks',
-                index: 2,
-                selectedIndex: _selectedIndex,
-                onTap: () => setState(() => _selectedIndex = 2),
-              ),
-              _NavItem(
-                icon: _isOrg ? Icons.dashboard_outlined : Icons.person_outline,
-                activeIcon: _isOrg ? Icons.dashboard : Icons.person,
-                label: _isOrg ? 'Dashboard' : 'Profile',
-                index: 3,
-                selectedIndex: _selectedIndex,
-                onTap: () => setState(() => _selectedIndex = 3),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final int index;
-  final int selectedIndex;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.index,
-    required this.selectedIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isActive = selectedIndex == index;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? AppColors.bioTeal : AppColors.textMuted,
-              size: 22,
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Outfit',
-                fontSize: 10,
-                color: isActive ? AppColors.bioTeal : AppColors.textMuted,
+            // Liquid Glass Nav Bar
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: LiquidGlassNavBar(
+                currentIndex: _selectedIndex,
+                onTap: (i) => setState(() => _selectedIndex = i),
+                items: [
+                  const LiquidGlassNavItem(
+                    icon: Icons.home_outlined,
+                    activeIcon: Icons.home_rounded,
+                    label: 'Home',
+                  ),
+                  const LiquidGlassNavItem(
+                    icon: Icons.list_alt_outlined,
+                    activeIcon: Icons.list_alt_rounded,
+                    label: 'Records',
+                  ),
+                  const LiquidGlassNavItem(
+                    icon: Icons.leaderboard_outlined,
+                    activeIcon: Icons.leaderboard_rounded,
+                    label: 'Ranks',
+                  ),
+                  LiquidGlassNavItem(
+                    icon: _isOrg ? Icons.dashboard_outlined : Icons.person_outline,
+                    activeIcon: _isOrg ? Icons.dashboard_rounded : Icons.person_rounded,
+                    label: _isOrg ? 'Dashboard' : 'Profile',
+                  ),
+                ],
               ),
             ),
           ],
@@ -187,6 +101,80 @@ class _NavItem extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Nebula FAB — liquid glass pill
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _NebulaFAB extends StatefulWidget {
+  final VoidCallback onTap;
+  const _NebulaFAB({required this.onTap});
+
+  @override
+  State<_NebulaFAB> createState() => _NebulaFABState();
+}
+
+class _NebulaFABState extends State<_NebulaFAB>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _pulse = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (_, child) => Transform.scale(
+        scale: _pulse.value,
+        child: child,
+      ),
+      child: LiquidGlassCard(
+        onTap: widget.onTap,
+        borderRadius: 30,
+        tintColor: AppColors.bioTeal,
+        blurStrength: 24,
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.auto_awesome_rounded,
+                color: AppColors.bioTeal, size: 18),
+            SizedBox(width: 8),
+            Text(
+              'Nebula',
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
 
 // ── Home Dashboard Tab ────────────────────────────────────────────────────────
 
@@ -230,8 +218,7 @@ class _DashboardTabState extends State<_DashboardTab> {
 
   @override
   Widget build(BuildContext context) {
-    final name =
-        (widget.userData['name'] as String? ?? 'Star').split(' ').first;
+
     final stardust = widget.userData['stardust'] ?? 0;
     final streak = widget.userData['weeklyStreak'] ?? 0;
 
@@ -256,34 +243,16 @@ class _DashboardTabState extends State<_DashboardTab> {
                           MaterialPageRoute(
                               builder: (_) => const MeetTheStarsScreen()),
                         ),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: AppColors.bioTeal, width: 1.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.bioTeal.withOpacity(0.3),
-                                blurRadius: 12,
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: Image.asset(
-                              'assets/images/logo.png',
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    colors: [AppColors.bioTeal, AppColors.kelp],
-                                  ),
-                                ),
-                                child: const Icon(Icons.eco,
-                                    color: AppColors.midnightBlack, size: 22),
-                              ),
+                        child: SizedBox(
+                          width: 42,
+                          height: 42,
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.eco,
+                              color: AppColors.spruceLight,
+                              size: 26,
                             ),
                           ),
                         ),

@@ -38,12 +38,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       _history.add({'role': 'user', 'content': text});
       final reply =
           await ApiService.instance.sendChatMessage(text, _history);
+      if (!mounted) return;
       _history.add({'role': 'assistant', 'content': reply});
       setState(() {
         _isTyping = false;
         _messages.add({'role': 'bot', 'text': reply});
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isTyping = false;
         _messages.add({
@@ -53,7 +55,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         });
       });
     }
-    _scrollToBottom();
+    if (mounted) _scrollToBottom();
   }
 
   void _scrollToBottom() {
